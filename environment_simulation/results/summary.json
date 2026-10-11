@@ -1,0 +1,606 @@
+{
+ "meta": {
+  "date": "2026-10-11",
+  "runtime": "11 min",
+  "sim_hours": "1,478",
+  "conf_thr": 0.95,
+  "weights_bytes": 1804,
+  "n_train": {
+   "chamber": 11068,
+   "field": 40754
+  },
+  "quick": false
+ },
+ "results": {
+  "T00": {
+   "id": "T00",
+   "name": "Generalisation to unseen field sessions + unseen units",
+   "criterion": "chamber+field model macro-F1 >= 0.85 on held-out field data",
+   "verdict": "PASS",
+   "summary": "Chamber+field model: macro-F1 0.85, coverage 83%, selective accuracy 98%. Chamber-only model: macro-F1 0.68, selective accuracy 76%. int8 quantisation cost +0.3 pts accuracy.",
+   "data": {
+    "B": {
+     "n": 9783,
+     "coverage": 0.8293979351937034,
+     "sel_acc": 0.9844712842001478,
+     "acc": 0.8165184503730962,
+     "macro_f1": 0.8515011712174783,
+     "conf_wrong": 0.012879484820607176
+    },
+    "A": {
+     "n": 9783,
+     "coverage": 0.8385975672084228,
+     "sel_acc": 0.7567040468064359,
+     "acc": 0.6345701727486456,
+     "macro_f1": 0.6797776947312235,
+     "conf_wrong": 0.20402739445977716
+    },
+    "quant_loss": 0.0028621077379127335
+   }
+  },
+  "T01": {
+   "id": "T01",
+   "name": "Chamber tests, single sources (in-distribution)",
+   "criterion": "macro-F1 >= 0.90",
+   "verdict": "FAIL",
+   "summary": "macro-F1 0.90, coverage 84%, selective accuracy 99% over 2201 windows on the 10 unseen pilot units.",
+   "data": {
+    "m": {
+     "n": 2201,
+     "coverage": 0.8355293048614266,
+     "sel_acc": 0.9864056552474171,
+     "acc": 0.8241708314402544,
+     "macro_f1": 0.8968736998796144,
+     "conf_wrong": 0.011358473421172195
+    }
+   }
+  },
+  "T02": {
+   "id": "T02",
+   "name": "Detection limit (excess PM2.5 over a 30 ug/m3 background)",
+   "criterion": ">= 80 % correct attribution at <= 50 ug/m3 excess for every class",
+   "verdict": "FAIL",
+   "summary": "Smallest excess PM2.5 (ug/m3) attributed correctly >= 80 % of the time: biomass burning 50, dust 25, industrial 50, vehicle exhaust 100.",
+   "data": {
+    "limits": {
+     "biomass_burning": 50,
+     "dust": 25,
+     "industrial": 50,
+     "vehicle_exhaust": 100
+    }
+   }
+  },
+  "T03": {
+   "id": "T03",
+   "name": "Humidity sweep 20-97 % RH (incl. fog)",
+   "criterion": "accuracy drop at 85 % RH <= 10 pts vs 40-60 % RH; false source alarms in fog <= 10 %",
+   "verdict": "FAIL",
+   "summary": "Accuracy by RH: 20% 94%, 40% 97%, 60% 95%, 75% 93%, 85% 83%, 92% 87%, 97% 76%. Drop at 85 % RH: 13 pts. Fog (RH>=92 %, no source): 0% of windows falsely blamed on a source.",
+   "data": {
+    "table": {
+     "20": {
+      "n": 591,
+      "coverage": 0.9424703891708968,
+      "sel_acc": 1.0,
+      "acc": 0.9424703891708968,
+      "macro_f1": 0.963505780362883,
+      "conf_wrong": 0.0
+     },
+     "40": {
+      "n": 592,
+      "coverage": 0.9679054054054054,
+      "sel_acc": 0.9982547993019197,
+      "acc": 0.9662162162162162,
+      "macro_f1": 0.9742102109547718,
+      "conf_wrong": 0.0016891891891891893
+     },
+     "60": {
+      "n": 597,
+      "coverage": 0.949748743718593,
+      "sel_acc": 1.0,
+      "acc": 0.949748743718593,
+      "macro_f1": 0.967346488482922,
+      "conf_wrong": 0.0
+     },
+     "75": {
+      "n": 592,
+      "coverage": 0.9341216216216216,
+      "sel_acc": 0.9981916817359855,
+      "acc": 0.9324324324324325,
+      "macro_f1": 0.9553389999778069,
+      "conf_wrong": 0.0016891891891891893
+     },
+     "85": {
+      "n": 595,
+      "coverage": 0.8336134453781513,
+      "sel_acc": 0.9919354838709677,
+      "acc": 0.826890756302521,
+      "macro_f1": 0.8919498148739813,
+      "conf_wrong": 0.0067226890756302525
+     },
+     "92": {
+      "n": 595,
+      "coverage": 0.8739495798319328,
+      "sel_acc": 1.0,
+      "acc": 0.8739495798319328,
+      "macro_f1": 0.923723233086157,
+      "conf_wrong": 0.0
+     },
+     "97": {
+      "n": 591,
+      "coverage": 0.7732656514382402,
+      "sel_acc": 0.9781181619256017,
+      "acc": 0.7563451776649747,
+      "macro_f1": 0.8249705451743544,
+      "conf_wrong": 0.01692047377326565
+     }
+    },
+    "fog_false": 0.0
+   }
+  },
+  "T04": {
+   "id": "T04",
+   "name": "Temperature sweep 5-45 C",
+   "criterion": "accuracy spread across temperatures <= 10 pts",
+   "verdict": "PASS",
+   "summary": "Accuracy by temperature: 5 C 95%, 15 C 92%, 25 C 95%, 35 C 93%, 45 C 89% (spread 6 pts).",
+   "data": {
+    "table": {
+     "5": {
+      "n": 598,
+      "coverage": 0.9464882943143813,
+      "sel_acc": 1.0,
+      "acc": 0.9464882943143813,
+      "macro_f1": 0.9761711934645882,
+      "conf_wrong": 0.0
+     },
+     "15": {
+      "n": 595,
+      "coverage": 0.9193277310924369,
+      "sel_acc": 1.0,
+      "acc": 0.9193277310924369,
+      "macro_f1": 0.9523205158084928,
+      "conf_wrong": 0.0
+     },
+     "25": {
+      "n": 596,
+      "coverage": 0.9513422818791947,
+      "sel_acc": 1.0,
+      "acc": 0.9513422818791947,
+      "macro_f1": 0.9723591484713486,
+      "conf_wrong": 0.0
+     },
+     "35": {
+      "n": 593,
+      "coverage": 0.9342327150084317,
+      "sel_acc": 1.0,
+      "acc": 0.9342327150084317,
+      "macro_f1": 0.9586504234069849,
+      "conf_wrong": 0.0
+     },
+     "45": {
+      "n": 591,
+      "coverage": 0.8866328257191202,
+      "sel_acc": 1.0,
+      "acc": 0.8866328257191202,
+      "macro_f1": 0.9207853821219745,
+      "conf_wrong": 0.0
+     }
+    }
+   }
+  },
+  "T05": {
+   "id": "T05",
+   "name": "Wind speed x direction x inlet design (PolSo-19 enclosures)",
+   "criterion": "hooded design: accuracy drop at 4 m/s <= 5 pts vs calm",
+   "verdict": "PASS",
+   "summary": "Accuracy at 0.3 / 2 / 4 / 6 m/s - baseline: 93% / 96% / 91% / 88%; hooded: 94% / 93% / 94% / 88%; multi_hole: 96% / 92% / 90% / 89%. PM10 bias at 4 m/s for dust (0/90/180 deg): baseline -3%/-9%/-18%; hooded -1%/-2%/-4%; multi_hole -9%/-8%/-9%. Model trained on hooded-enclosure data only.",
+   "data": {
+    "acc": {
+     "baseline": {
+      "0.3": 0.9321561338289963,
+      "2.0": 0.9609302325581396,
+      "4.0": 0.9141509433962264,
+      "6.0": 0.8809283551967709
+     },
+     "hooded": {
+      "0.3": 0.9412861136999068,
+      "2.0": 0.9314814814814815,
+      "4.0": 0.9385796545105566,
+      "6.0": 0.8761421319796955
+     },
+     "multi_hole": {
+      "0.3": 0.9591078066914498,
+      "2.0": 0.9154275092936803,
+      "4.0": 0.9013157894736842,
+      "6.0": 0.889795918367347
+     }
+    },
+    "bias": {
+     "baseline": {
+      "0.0": -0.031187371392666807,
+      "90.0": -0.08954815509693559,
+      "180.0": -0.17513513237091471
+     },
+     "hooded": {
+      "0.0": -0.011536319753193136,
+      "90.0": -0.01870131900619698,
+      "180.0": -0.0358017683547347
+     },
+     "multi_hole": {
+      "0.0": -0.09191832261791677,
+      "90.0": -0.07915458525214625,
+      "180.0": -0.09172381346874692
+     }
+    }
+   }
+  },
+  "T06": {
+   "id": "T06",
+   "name": "Mixed sources (50/50 and 75/25 pairs)",
+   "criterion": "answered label is a real contributor >= 85 %; dominant source found >= 70 % at 75/25",
+   "verdict": "PASS",
+   "summary": "Answered labels naming a real contributor: 100%. Abstained on 40% of mixed windows. Dominant source correctly named at 75/25: 71%.",
+   "data": {
+    "hit": 1.0,
+    "dom_acc": 0.7129455909943715,
+    "abstain": 0.39814814814814814
+   }
+  },
+  "T07": {
+   "id": "T07",
+   "name": "Response time to a new source",
+   "criterion": "median time-to-correct-label <= 90 s and <= 10 % never detected",
+   "verdict": "FAIL",
+   "summary": "Median 149 s, 90th percentile 230 s from source onset to first correct label (60 s window, 30 s hop, EMA smoothing); 2% never detected.",
+   "data": {
+    "latency": [
+     149.0,
+     149.0,
+     149.0,
+     149.0,
+     149.0,
+     149.0,
+     149.0,
+     149.0,
+     149.0,
+     149.0,
+     149.0,
+     329.0,
+     149.0,
+     NaN,
+     449.0,
+     149.0,
+     239.0,
+     149.0,
+     149.0,
+     329.0,
+     149.0,
+     149.0,
+     149.0,
+     179.0,
+     149.0,
+     179.0,
+     149.0,
+     149.0,
+     149.0,
+     149.0,
+     149.0,
+     209.0,
+     149.0,
+     179.0,
+     149.0,
+     179.0,
+     149.0,
+     179.0,
+     239.0,
+     149.0,
+     149.0,
+     149.0,
+     179.0,
+     179.0,
+     149.0
+    ]
+   }
+  },
+  "T08": {
+   "id": "T08",
+   "name": "Sensor ageing / drift 0-365 days",
+   "criterion": "macro-F1 drop at 180 days <= 10 pts with on-device baseline tracking",
+   "verdict": "PASS",
+   "summary": "macro-F1 with baseline tracking: day 0 0.81, day 30 0.82, day 90 0.82, day 180 0.82, day 365 0.80. With frozen factory baseline: day 0 0.83, day 30 0.82, day 90 0.80, day 180 0.74, day 365 0.63.",
+   "data": {
+    "tracking": {
+     "0": 0.8147952979945489,
+     "30": 0.8179965268771522,
+     "90": 0.8227585504980894,
+     "180": 0.8205298109862336,
+     "365": 0.8034025780436677
+    },
+    "frozen": {
+     "0": 0.8300719558872984,
+     "30": 0.8228000491729783,
+     "90": 0.8035980615156222,
+     "180": 0.7431128168677021,
+     "365": 0.6296064066394279
+    }
+   }
+  },
+  "T09": {
+   "id": "T09",
+   "name": "Unit-to-unit variation (10 pilot prototypes)",
+   "criterion": "std of macro-F1 across units <= 0.05 and worst unit >= 0.80",
+   "verdict": "PASS",
+   "summary": "macro-F1 mean 0.88, std 0.023, worst unit 0.83, best 0.91 (same scenarios replayed on every unit).",
+   "data": {
+    "per_unit": {
+     "100": 0.8867975589781045,
+     "101": 0.8875662089754355,
+     "102": 0.8903121302477974,
+     "103": 0.8282749885629567,
+     "104": 0.9080456338340243,
+     "105": 0.8912133000335107,
+     "106": 0.8773538400045972,
+     "107": 0.8903816979144288,
+     "108": 0.8904943287407884,
+     "109": 0.8435978038620664
+    }
+   }
+  },
+  "T10": {
+   "id": "T10",
+   "name": "Unseen source subtypes and confounders",
+   "criterion": "confident-wrong <= 25 % on unseen subtypes and <= 30 % on confounders (cooking, incense); fog <= 10 %",
+   "verdict": "FAIL",
+   "summary": "cooking: correct 0% / uncertain 16% / wrong 84%; dust_storm: correct 83% / uncertain 12% / wrong 5%; fog: correct 100% / uncertain 0% / wrong 0%; incense: correct 0% / uncertain 45% / wrong 55%; trash_burning: correct 22% / uncertain 52% / wrong 26%; two_stroke_traffic: correct 28% / uncertain 56% / wrong 16%.",
+   "data": {
+    "table": {
+     "cooking": {
+      "correct": 0.0,
+      "uncertain": 0.1625,
+      "wrong": 0.8375,
+      "top": "biomass_burning"
+     },
+     "dust_storm": {
+      "correct": 0.8291666666666667,
+      "uncertain": 0.125,
+      "wrong": 0.04583333333333333,
+      "top": "dust"
+     },
+     "fog": {
+      "correct": 1.0,
+      "uncertain": 0.0,
+      "wrong": 0.0,
+      "top": "background"
+     },
+     "incense": {
+      "correct": 0.0,
+      "uncertain": 0.44583333333333336,
+      "wrong": 0.5541666666666667,
+      "top": "biomass_burning"
+     },
+     "trash_burning": {
+      "correct": 0.225,
+      "uncertain": 0.5166666666666667,
+      "wrong": 0.25833333333333336,
+      "top": "uncertain"
+     },
+     "two_stroke_traffic": {
+      "correct": 0.2833333333333333,
+      "uncertain": 0.5583333333333333,
+      "wrong": 0.15833333333333333,
+      "top": "uncertain"
+     }
+    }
+   }
+  },
+  "T11": {
+   "id": "T11",
+   "name": "24-hour field days in six environments",
+   "criterion": "overall selective accuracy >= 80 % at coverage >= 70 %",
+   "verdict": "PASS",
+   "summary": "All days: selective accuracy 89%, coverage 75%, macro-F1 0.77. Construction site, pre-monsoon summer: 99% @ 94%; Highway toll plaza: 45% @ 54%; Industrial estate: 100% @ 72%; Residential park, monsoon: 100% @ 89%; Rural village, crop-burning season: 100% @ 88%; Urban roadside, winter (Delhi-like): 58% @ 51%.",
+   "data": {
+    "per_day": {
+     "Construction site, pre-monsoon summer": {
+      "n": 2525,
+      "coverage": 0.9386138613861386,
+      "sel_acc": 0.9940928270042194,
+      "acc": 0.9330693069306931,
+      "macro_f1": 0.38652220783540425,
+      "conf_wrong": 0.005544554455445544
+     },
+     "Highway toll plaza": {
+      "n": 2354,
+      "coverage": 0.54035683942226,
+      "sel_acc": 0.45047169811320753,
+      "acc": 0.24341546304163125,
+      "macro_f1": 0.14588290179612784,
+      "conf_wrong": 0.29694137638062873
+     },
+     "Industrial estate": {
+      "n": 2638,
+      "coverage": 0.72289613343442,
+      "sel_acc": 0.9989512323020451,
+      "acc": 0.7221379833206975,
+      "macro_f1": 0.25797491039426523,
+      "conf_wrong": 0.000758150113722517
+     },
+     "Residential park, monsoon": {
+      "n": 2650,
+      "coverage": 0.8883018867924528,
+      "sel_acc": 0.9991503823279524,
+      "acc": 0.8875471698113208,
+      "macro_f1": 0.189983844911147,
+      "conf_wrong": 0.0007547169811320754
+     },
+     "Rural village, crop-burning season": {
+      "n": 2778,
+      "coverage": 0.8801295896328294,
+      "sel_acc": 0.9987730061349693,
+      "acc": 0.8790496760259179,
+      "macro_f1": 0.3735356004250797,
+      "conf_wrong": 0.0010799136069114472
+     },
+     "Urban roadside, winter (Delhi-like)": {
+      "n": 2446,
+      "coverage": 0.5089942763695829,
+      "sel_acc": 0.5847389558232932,
+      "acc": 0.29762878168438267,
+      "macro_f1": 0.1208169576702532,
+      "conf_wrong": 0.21136549468520033
+     }
+    },
+    "overall": {
+     "n": 15391,
+     "coverage": 0.7532324085504516,
+     "sel_acc": 0.8932976796342621,
+     "acc": 0.6728607627834449,
+     "macro_f1": 0.7690168990275981,
+     "conf_wrong": 0.08037164576700669
+    }
+   }
+  },
+  "T12": {
+   "id": "T12",
+   "name": "Fault injection (UART, sensor death, fan stall, I2C, SD card)",
+   "criterion": "no crashes; dead sensors flagged >= 95 %; 0.1 % UART errors cost <= 3 pts; stalled-fan windows not reported as a confident source (<= 5 %)",
+   "verdict": "FAIL",
+   "summary": "none: acc 92%, flagged-after 0%, confident-after 79%; uart_bit_errors_0.1%: acc 93%, flagged-after 0%, confident-after 79%; uart_bit_errors_1%+slips: acc 100%, flagged-after 92%, confident-after 8%; pms_frames_dropped_30%: acc 100%, flagged-after 92%, confident-after 7%; pms_dead_after_1h: acc 99%, flagged-after 100%, confident-after 0%; pms_fan_stall_after_1h: acc 93%, flagged-after 0%, confident-after 100%; bme_i2c_errors_40%: acc 100%, flagged-after 96%, confident-after 4%; bme_dead_after_1h: acc 99%, flagged-after 100%, confident-after 0%; sd_write_fail_20%: acc 92%, flagged-after 0%, confident-after 79%. No crashes.",
+   "data": {
+    "cases": {
+     "none": {
+      "acc": 0.9230769230769231,
+      "fault_flag_after": 0.0,
+      "confident_after": 0.7863247863247863,
+      "pms_errors": 0,
+      "sd_lost": 0
+     },
+     "uart_bit_errors_0.1%": {
+      "acc": 0.9285714285714286,
+      "fault_flag_after": 0.0,
+      "confident_after": 0.7863247863247863,
+      "pms_errors": 215,
+      "sd_lost": 0
+     },
+     "uart_bit_errors_1%+slips": {
+      "acc": 1.0,
+      "fault_flag_after": 0.9230769230769231,
+      "confident_after": 0.07692307692307693,
+      "pms_errors": 1895,
+      "sd_lost": 0
+     },
+     "pms_frames_dropped_30%": {
+      "acc": 1.0,
+      "fault_flag_after": 0.9230769230769231,
+      "confident_after": 0.06837606837606838,
+      "pms_errors": 0,
+      "sd_lost": 0
+     },
+     "pms_dead_after_1h": {
+      "acc": 0.989247311827957,
+      "fault_flag_after": 1.0,
+      "confident_after": 0.0,
+      "pms_errors": 0,
+      "sd_lost": 0
+     },
+     "pms_fan_stall_after_1h": {
+      "acc": 0.9285714285714286,
+      "fault_flag_after": 0.0,
+      "confident_after": 1.0,
+      "pms_errors": 0,
+      "sd_lost": 0
+     },
+     "bme_i2c_errors_40%": {
+      "acc": 1.0,
+      "fault_flag_after": 0.9572649572649573,
+      "confident_after": 0.042735042735042736,
+      "pms_errors": 0,
+      "sd_lost": 0
+     },
+     "bme_dead_after_1h": {
+      "acc": 0.989247311827957,
+      "fault_flag_after": 1.0,
+      "confident_after": 0.0,
+      "pms_errors": 0,
+      "sd_lost": 0
+     },
+     "sd_write_fail_20%": {
+      "acc": 0.9230769230769231,
+      "fault_flag_after": 0.0,
+      "confident_after": 0.7863247863247863,
+      "pms_errors": 0,
+      "sd_lost": 0
+     }
+    },
+    "crashed": []
+   }
+  },
+  "T13": {
+   "id": "T13",
+   "name": "Firmware C vs Python twin (software-in-the-loop)",
+   "criterion": "label agreement >= 99.5 %, max probability diff <= 0.01, RAM <= 32 KB, inference <= 10 ms",
+   "verdict": "PASS",
+   "summary": "Labels agree on 100.00% of 537 windows (incl. a stream with UART corruption and I2C errors); max probability difference 1.1e-07; max relative feature difference 1.8e-03. Firmware state 3.1 KB RAM, model 1.8 KB flash, 1392 MACs per inference, est. ~0.18 ms per window at 170 MHz (measure with the DWT cycle counter on the board). Builds with -Wall -Wextra and no warnings.",
+   "data": {
+    "agree": 1.0,
+    "max_dp": 1.1092543539259481e-07,
+    "max_df": 0.0017773139513339896,
+    "state_bytes": 3200,
+    "weight_bytes": 1804,
+    "macs": 1392,
+    "est_ms": 0.17981176470588234
+   }
+  },
+  "T14": {
+   "id": "T14",
+   "name": "Battery life (2000 mAh Li-ion) and duty cycling",
+   "criterion": ">= 24 h continuous sampling in the configuration as specified (NUCLEO + 2000 mAh)",
+   "verdict": "FAIL",
+   "summary": "NUCLEO board, continuous: 7.3 h (232 mA avg); Custom PCB, continuous: 11.0 h (154 mA avg); Custom PCB, PMS 90 s on / 90 s off: 18.2 h (93 mA avg); Custom PCB, PMS 90 s on / 270 s off: 27.2 h (63 mA avg). Duty cycling keeps selective accuracy at 85% (1/2 duty) and 85% (1/4 duty) but only samples 33% / 17% of the time, so short events are missed.",
+   "data": {
+    "modes": {
+     "NUCLEO board, continuous": {
+      "hours": 7.312138593930385,
+      "ma": 232.49012285012287
+     },
+     "Custom PCB, continuous": {
+      "hours": 11.003939725319778,
+      "ma": 154.49012285012287
+     },
+     "Custom PCB, PMS 90 s on / 90 s off": {
+      "hours": 18.236699123194054,
+      "ma": 93.21862407862409
+     },
+     "Custom PCB, PMS 90 s on / 270 s off": {
+      "hours": 27.163980695082255,
+      "ma": 62.5828746928747
+     }
+    },
+    "duty": {
+     "180": {
+      "sel_acc": 0.8496369073045706,
+      "coverage_time": 0.3333333333333333
+     },
+     "360": {
+      "sel_acc": 0.8533218291630716,
+      "coverage_time": 0.16666666666666666
+     }
+    }
+   }
+  },
+  "T15": {
+   "id": "T15",
+   "name": "Research question: PM-only vs gas-only vs fused",
+   "criterion": "fused macro-F1 >= best single-sensor model + 0.05",
+   "verdict": "PASS",
+   "summary": "macro-F1 (no abstention) on all held-out field windows: PM-only 0.76, gas-only 0.60, fused MLP 0.84 (+0.09), fused random forest 0.95.",
+   "data": {
+    "B_pm_only": 0.7550021293656638,
+    "B_gas_only": 0.599003731185568,
+    "B_fused": 0.8438086565929117,
+    "B_rf": 0.9492089408100922
+   }
+  }
+ }
+}

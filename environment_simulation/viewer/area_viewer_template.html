@@ -1,0 +1,753 @@
+<meta charset="utf-8">
+<title>PolSo Array Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: full-bleed 3D survey model; floating instrument panels on the edges, timeline docked at the bottom.
+   Single deliberate look (a pale architectural massing model), so colours are fixed rather than theme-switched. */
+:root{
+  color-scheme: light;
+  --ground:#dfe3df; --paper:#f6f7f4; --paper-2:#eceee9; --ink:#1d2321; --ink-2:#56605b; --ink-3:#8b948f;
+  --line:#cfd4cf; --accent:#2f5d50;
+  --good:#2e8540; --bad:#c62f2f; --neutral:#b4b3ad; --off:#55544f;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+html,body{height:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font:13px/1.45 var(--body);overflow:hidden}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;width:100%;height:100%;outline:none}
+.panel{position:absolute;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(6px);
+  border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px rgba(30,40,35,.10)}
+.top{top:calc(12px + env(safe-area-inset-top,0px));left:16px;right:16px;display:flex;gap:12px;align-items:flex-start;
+  pointer-events:none;position:absolute}
+.top>*{pointer-events:auto}
+.brand{padding:12px 14px;max-width:440px;min-width:0}
+.brand h1{font:700 26px/1 var(--display);letter-spacing:.01em;margin:0;text-transform:uppercase}
+.brand h1 span{color:var(--ink-3);font-weight:500}
+.brand p{margin:6px 0 0;color:var(--ink-2)}
+#cases{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+#cases button{font:600 12px/1 var(--body);padding:7px 10px;border-radius:99px;border:1px solid var(--line);
+  background:var(--paper);color:var(--ink-2);cursor:pointer}
+#cases button[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+#cases button:focus-visible,.btn:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.right{margin-left:auto;display:flex;flex-direction:column;gap:10px;width:250px}
+.right .panel{position:relative}
+.wx{padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
+.clock{font:600 30px/1 var(--display);font-variant-numeric:tabular-nums}
+.lbl{font:500 10.5px/1.2 var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3)}
+.val{font:500 13px/1.3 var(--mono);font-variant-numeric:tabular-nums}
+#compass{width:64px;height:64px;grid-row:span 3}
+.stats{padding:12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stats b{display:block;font:600 22px/1 var(--display);font-variant-numeric:tabular-nums}
+.legend{position:absolute;left:16px;bottom:calc(92px + env(safe-area-inset-bottom,0px));padding:10px 12px;display:grid;gap:5px}
+.legend div{display:flex;align-items:center;gap:7px;color:var(--ink-2)}
+.sw{width:11px;height:11px;border-radius:50%;flex:none}
+.legend .note{font-size:11px;color:var(--ink-3);max-width:210px}
+.timeline{left:16px;right:16px;bottom:calc(12px + env(safe-area-inset-bottom,0px));padding:10px 12px;display:flex;gap:12px;align-items:center}
+.btn{font:600 12px/1 var(--body);border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:6px;
+  padding:8px 11px;cursor:pointer;white-space:nowrap}
+.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink);min-width:64px}
+select{font:500 12px var(--body);padding:7px 6px;border-radius:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.track{flex:1;min-width:0;position:relative;height:46px}
+#strip{position:absolute;left:0;right:0;top:0;height:28px;width:100%;border-radius:4px;cursor:pointer}
+#scrub{position:absolute;left:0;right:0;bottom:0;width:100%;margin:0;accent-color:var(--ink)}
+.tl-key{display:flex;gap:10px;color:var(--ink-3);font-size:11px;flex-wrap:wrap;max-width:180px}
+.tl-key i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+#panel{right:16px;top:calc(300px + env(safe-area-inset-top,0px));width:300px;padding:14px;max-height:calc(100% - 420px);overflow:auto}
+#panel h2{font:700 22px/1 var(--display);margin:0;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+#panel .x{font:500 18px/1 var(--body);border:0;background:none;cursor:pointer;color:var(--ink-2);padding:2px 6px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--paper-2)}
+.pill{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--body)}
+.bar{height:6px;border-radius:3px;background:var(--paper-2);overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:var(--ink)}
+#hist{width:100%;height:46px;margin-top:6px}
+.fault{color:var(--bad);font-weight:600}
+.src{color:var(--ink-2);font-size:12px}
+.tag{position:absolute;pointer-events:none;transform:translate(-50%,-100%);font:600 11px/1 var(--mono);color:var(--ink);
+  background:color-mix(in srgb,var(--paper) 85%,transparent);border:1px solid var(--line);border-radius:4px;padding:3px 5px;white-space:nowrap}
+.tag.src-tag{font:500 10.5px/1 var(--body);color:var(--ink-2);background:none;border:0;text-shadow:0 0 3px var(--paper),0 0 3px var(--paper)}
+.tag .ok{color:var(--good)} .tag .no{color:var(--bad)}
+#tip{position:absolute;pointer-events:none;padding:8px 10px;font-size:12px;max-width:240px;z-index:5}
+#loading{position:absolute;inset:0;display:grid;place-items:center;font:600 20px var(--display);color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em}
+/* view switch + devices view */
+.views{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-top:10px}
+.views button{font:600 12px/1 var(--body);padding:7px 12px;border:0;background:var(--paper);color:var(--ink-2);cursor:pointer}
+.views button[aria-selected="true"]{background:var(--accent);color:var(--paper)}
+.views button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+body.dev-mode #stage, body.dev-mode .right, body.dev-mode .legend, body.dev-mode #panel, body.dev-mode #tip, body.dev-mode .tag{visibility:hidden}
+body.dev-mode{background:var(--paper-2)}
+#devView{position:absolute;left:16px;right:16px;top:var(--topH,200px);bottom:calc(84px + env(safe-area-inset-bottom,0px));
+  display:grid;grid-template-columns:210px minmax(0,1fr);gap:12px}
+#devTabs{overflow:auto;padding:6px;display:flex;flex-direction:column;gap:3px;position:relative}
+#devTabs button{display:grid;grid-template-columns:12px 38px 1fr auto;gap:8px;align-items:center;text-align:left;
+  font:500 12px/1.2 var(--body);padding:8px 9px;border:1px solid transparent;border-radius:6px;background:none;color:var(--ink);cursor:pointer}
+#devTabs button b{font:600 13px var(--mono)}
+#devTabs button span.l{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#devTabs button[aria-selected="true"]{background:var(--paper);border-color:var(--line);box-shadow:0 1px 3px rgba(30,40,35,.08)}
+#devTabs button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+#devDetail{overflow:auto;padding:16px 18px;display:flex;flex-direction:column;gap:14px;min-width:0;position:relative}
+.dh{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+.dh h2{font:700 30px/1 var(--display);margin:0;text-transform:uppercase}
+.dh .src{flex:1}
+.badge{font:600 11px/1 var(--body);padding:4px 8px;border-radius:99px;border:1.5px solid currentColor}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kp div{background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:10px 12px}
+.kp b{display:block;font:600 24px/1 var(--display);font-variant-numeric:tabular-nums}
+.nowrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:4px 18px}
+.chart{background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:10px 12px 8px;margin:0;min-width:0}
+.chart figcaption{display:flex;justify-content:space-between;gap:10px;font:600 12px var(--body);margin-bottom:4px;flex-wrap:wrap}
+.chart figcaption span{font:400 12px var(--mono);color:var(--ink-2)}
+.chart canvas{width:100%;display:block;cursor:crosshair}
+.ck{display:flex;gap:12px;font-size:11px;color:var(--ink-2);margin-top:4px;flex-wrap:wrap}
+.ck i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:3px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:14px}
+#miniMap{width:100%;max-width:220px;height:auto;cursor:default}
+.openDev{margin-top:10px;width:100%}
+@media (max-width:860px){
+  #devView{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
+  #devTabs{flex-direction:row;overflow-x:auto}
+  #devTabs button{grid-template-columns:12px auto auto}
+  #devTabs button span.l{display:none}
+  .two{grid-template-columns:1fr}
+}
+@media (max-width:860px){
+  .top{flex-direction:column}
+  .right{margin-left:0;width:100%;flex-direction:row}
+  .right .panel{flex:1;min-width:0}
+  #compass{width:48px;height:48px}
+  .legend{display:none}
+  #panel{left:16px;right:16px;width:auto;top:auto;bottom:calc(84px + env(safe-area-inset-bottom,0px));max-height:45%}
+  .tl-key{display:none}
+  .brand h1{font-size:21px}
+}
+@media (max-width:520px){ .stats{display:none} .brand p{display:none} }
+</style>
+
+<div id="stage"><div id="loading">Building the map…</div></div>
+<div class="top">
+  <div class="panel brand">
+    <h1>PolSo array <span>· 2 × 2 km</span></h1>
+    <p id="blurb"></p>
+    <nav id="cases" role="tablist" aria-label="Simulation case"></nav>
+    <div class="views" role="tablist" aria-label="View"><button id="vMap" role="tab" aria-selected="true">3D map</button><button id="vDev" role="tab" aria-selected="false">Devices</button></div>
+  </div>
+  <div class="right">
+    <div class="panel wx">
+      <div><div class="lbl">Local time</div><div class="clock" id="clock">--:--</div></div>
+      <canvas id="compass" width="128" height="128" aria-label="Wind direction"></canvas>
+      <div><span class="lbl">Temp / RH</span> <span class="val" id="trh"></span></div>
+      <div><span class="lbl">Wind</span> <span class="val" id="wind"></span></div>
+    </div>
+    <div class="panel stats">
+      <div><b id="sAcc">–</b><span class="lbl">Correct when answering</span></div>
+      <div><b id="sCov">–</b><span class="lbl">Answered (not uncertain)</span></div>
+      <div><b id="sNow">–</b><span class="lbl">Correct right now</span></div>
+      <div><b id="sFault">–</b><span class="lbl">Devices in fault</span></div>
+    </div>
+  </div>
+</div>
+<div class="panel legend" id="legend"></div>
+<aside class="panel" id="panel" hidden aria-live="polite"></aside>
+<section id="devView" hidden aria-label="Devices">
+  <nav class="panel" id="devTabs" role="tablist" aria-label="Device" aria-orientation="vertical"></nav>
+  <div class="panel" id="devDetail" role="tabpanel"></div>
+</section>
+<div class="panel" id="tip" hidden></div>
+<div class="panel timeline">
+  <button class="btn primary" id="play">Play</button>
+  <select id="speed" aria-label="Playback speed">
+    <option value="120">120× </option><option value="300" selected>300×</option><option value="900">900×</option>
+  </select>
+  <label class="btn" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="truthRing" checked> Truth rings</label>
+  <div class="track">
+    <canvas id="strip" aria-label="Array outcome over time; click to jump"></canvas>
+    <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Time">
+  </div>
+  <div class="tl-key"><span><i style="background:var(--good)"></i>correct</span><span><i style="background:var(--bad)"></i>wrong</span>
+    <span><i style="background:var(--neutral)"></i>uncertain</span><span><i style="background:var(--off)"></i>fault</span></div>
+</div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script>window.AREA = /*__DATA__*/null;</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const D = window.AREA;
+const CLS = D.classes;
+const COLOR = {vehicle_exhaust:'#2a78d6', biomass_burning:'#eb6834', dust:'#eda100', industrial:'#4a3aa7',
+  background:'#1baf7a', uncertain:'#b4b3ad', sensor_fault:'#3b3a37', warming_up:'#e2e1db', mixed:'#c9c8c2', confounder:'#e87ba4'};
+const NICE = {vehicle_exhaust:'Vehicle exhaust', biomass_burning:'Biomass burning', dust:'Dust', industrial:'Industrial',
+  background:'Background air', uncertain:'Uncertain', sensor_fault:'Sensor fault', warming_up:'Warming up',
+  mixed:'Mixed sources', confounder:'Other (cooking etc.)'};
+const ANSWER = new Set([0,1,2,3,4]);
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = id => document.getElementById(id);
+
+// ---------------------------------------------------------------- scene
+const stage = $('stage');
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+$('loading').remove();
+const scene = new THREE.Scene();
+const BG = new THREE.Color('#dfe3df'), HAZE = new THREE.Color('#bdb39f'), FOG = new THREE.Color('#eef0ee');
+scene.background = BG.clone();
+scene.fog = new THREE.Fog(BG.clone(), 2600, 6500);
+const camera = new THREE.PerspectiveCamera(42, 1, 5, 12000);
+camera.position.set(1250, 1350, 1750);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.maxPolarAngle = 1.38; controls.minDistance = 250; controls.maxDistance = 5200;
+controls.target.set(0, 0, 0);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8f998f, 1.0));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+sun.position.set(-900, 1600, 700); sun.castShadow = true;
+Object.assign(sun.shadow.camera, {left:-1300, right:1300, top:1300, bottom:-1300, near:100, far:4000});
+sun.shadow.mapSize.set(2048, 2048);
+scene.add(sun);
+const V = (x, y, h = 0) => new THREE.Vector3(x, h, -y);       // map metres (east, north) -> scene
+
+let seed = 7;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const mat = c => new THREE.MeshStandardMaterial({color:c, roughness:.92, metalness:0});
+function box(w, d, h, x, y, color, z0 = 0, cast = true) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color));
+  m.position.copy(V(x, y, z0 + h / 2)); m.castShadow = cast; m.receiveShadow = true; scene.add(m); return m;
+}
+// ground + survey grid
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(2600, 2600), mat('#d6dbd5'));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const grid = new THREE.GridHelper(2000, 8, 0x9aa49d, 0xb7beb8); grid.position.y = 0.4;
+grid.material.transparent = true; grid.material.opacity = .45; scene.add(grid);
+
+// farmland (west): furrowed fields, darker where the stubble fires are
+function furrows(c1, c2) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64; const g = cv.getContext('2d');
+  g.fillStyle = c1; g.fillRect(0, 0, 64, 64); g.fillStyle = c2;
+  for (let i = 0; i < 64; i += 8) g.fillRect(0, i, 64, 3);
+  const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 3); return t;
+}
+const fieldCols = [['#cdbf8c','#bfb07c'], ['#aebd8c','#9fae7f'], ['#c4b483','#b5a574']];
+for (let fx = -1000; fx < -400; fx += 150) for (let fy = -80; fy < 1000; fy += 125) {
+  const burnt = Math.hypot(fx + 70 + 760, fy + 60 - 520) < 160 || Math.hypot(fx + 70 + 640, fy + 60 - 160) < 140;
+  const c = burnt ? ['#6f6656', '#5f574a'] : fieldCols[Math.floor(rnd() * 3)];
+  const m = new THREE.Mesh(new THREE.BoxGeometry(140, 0.6, 115), new THREE.MeshStandardMaterial({map: furrows(...c), roughness: 1}));
+  m.position.copy(V(fx + 70, fy + 60, 0.3)); m.receiveShadow = true; scene.add(m);
+}
+// industrial estate (north-east)
+box(620, 800, 0.6, 690, 600, '#c4c7c5', 0, false);
+[[650,620,90,'Boiler'],[480,820,55,'Foundry'],[820,330,26,'Paint']].forEach(([x,y,h]) => {
+  box(70, 50, 22, x + 45, y - 10, '#b9bdbb'); box(50, 40, 16, x - 40, y + 30, '#c9ccca');
+  const c = new THREE.Mesh(new THREE.CylinderGeometry(4.5, 7, h, 16), mat('#a4a8a6'));
+  c.position.copy(V(x, y, h / 2)); c.castShadow = true; scene.add(c);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(4.8, 4.8, 4, 16), mat('#6c6f6d')); cap.position.copy(V(x, y, h)); scene.add(cap);
+});
+for (let i = 0; i < 9; i++) box(50 + rnd() * 40, 40 + rnd() * 30, 10 + rnd() * 10, 420 + rnd() * 540, 260 + rnd() * 700, '#cfd2d0');
+// construction site (south-east): dirt pad, crane, spoil heaps
+box(260, 240, 0.7, 570, -760, '#d5c299', 0, false);
+box(5, 5, 78, 520, -720, '#d39a2b'); box(95, 4, 4, 555, -720, '#d39a2b', 76);
+for (let i = 0; i < 4; i++) { const k = new THREE.Mesh(new THREE.ConeGeometry(18 + rnd() * 12, 10 + rnd() * 6, 10), mat('#bfa676'));
+  k.position.copy(V(600 + rnd() * 90, -820 + rnd() * 110, 6)); k.castShadow = true; scene.add(k); }
+// waste dump and street stalls
+{ const k = new THREE.Mesh(new THREE.ConeGeometry(42, 13, 14), mat('#8b806a')); k.position.copy(V(-220, -160, 6.5)); k.castShadow = true; scene.add(k); }
+for (let i = 0; i < 7; i++) box(7, 5, 3.5, -450 + i * 10, -720 + (i % 2) * 9, ['#d97b5b','#e2b04a','#7aa3c7'][i % 3]);
+// roads
+box(2000, 34, 0.9, 0, -450, '#5c605e', 0, false); box(2000, 10, 0.95, 0, -472, '#b4a88c', 0, false);
+box(20, 2000, 0.9, 150, 0, '#666a68', 0, false);
+for (let x = -980; x < 1000; x += 40) box(14, 1, 0.3, x, -450, '#f4f4f0', 0.9, false);
+// residential massing (avoid roads, zones and devices)
+const blocks = [];
+const free = (x, y) => Math.abs(y + 450) > 45 && Math.abs(x - 150) > 32 && !(x > 380 && y > 180) && !(x < -380 && y > -100)
+  && !(x > 430 && x < 710 && y < -630) && Math.hypot(x + 220, y + 160) > 70
+  && D.devices.every(d => Math.hypot(d.x - x, d.y - y) > 40);
+for (let i = 0; i < 2600 && blocks.length < 520; i++) {
+  const x = -1000 + rnd() * 2000, y = -1000 + rnd() * 2000;
+  if (free(x, y) && !(x > -260 && x < -40 && y > 330 && y < 560)) blocks.push([x, y, 6 + Math.pow(rnd(), 2) * 34, 14 + rnd() * 16]);
+}
+const bGeo = new THREE.BoxGeometry(1, 1, 1); bGeo.translate(0, .5, 0);
+const bMesh = new THREE.InstancedMesh(bGeo, mat('#f2f2ee'), blocks.length);
+const tmp = new THREE.Object3D();
+blocks.forEach(([x, y, h, s], i) => { tmp.position.copy(V(x, y)); tmp.scale.set(s, h, s * (0.7 + rnd() * .6)); tmp.rotation.y = 0; tmp.updateMatrix(); bMesh.setMatrixAt(i, tmp.matrix); });
+bMesh.castShadow = bMesh.receiveShadow = true; scene.add(bMesh);
+// park with trees
+box(220, 230, 0.5, -150, 445, '#b6c8a8', 0, false);
+const tGeo = new THREE.ConeGeometry(7, 20, 7); tGeo.translate(0, 10, 0);
+const trees = new THREE.InstancedMesh(tGeo, mat('#7f9b72'), 60);
+for (let i = 0; i < 60; i++) { tmp.position.copy(V(-250 + rnd() * 200, 340 + rnd() * 210)); tmp.scale.setScalar(.8 + rnd() * .6); tmp.updateMatrix(); trees.setMatrixAt(i, tmp.matrix); }
+trees.castShadow = true; scene.add(trees);
+// moving vehicles
+const NCAR = 70;
+const cars = new THREE.InstancedMesh(new THREE.BoxGeometry(5, 2.2, 2.4), mat('#ffffff'), NCAR);
+const carState = Array.from({length: NCAR}, (_, i) => ({road: i < 50 ? 0 : 1, dir: i % 2 ? 1 : -1, s: rnd() * 2000 - 1000, v: 0.7 + rnd() * .6}));
+const carCols = ['#e9e9e4','#c94a3c','#3a4f6e','#d8b24a','#6b6f6d'];
+carState.forEach((c, i) => cars.setColorAt(i, new THREE.Color(carCols[i % 5])));
+cars.castShadow = true; scene.add(cars);
+
+// ---------------------------------------------------------------- sources & labels
+const SRC = D.sources;
+const STACK_H = {coal_stack: 92, metal: 57, solvent: 28};
+const tagLayer = document.body;
+function mkTag(text, cls) { const el = document.createElement('div'); el.className = 'tag ' + (cls || ''); el.textContent = text; tagLayer.appendChild(el); return el; }
+const srcTags = [];
+const seenLabel = new Set();
+SRC.forEach(s => {
+  if (s.regional || seenLabel.has(s.label)) return; seenLabel.add(s.label);
+  const p = s.pt ? s.pt : [(s.line[0][0] + s.line[1][0]) / 2 + (s.line[0][1] === s.line[1][1] ? -620 : 0), (s.line[0][1] + s.line[1][1]) / 2 + (s.line[0][0] === s.line[1][0] ? 620 : 0)];
+  srcTags.push({el: mkTag(s.label, 'src-tag'), pos: V(p[0], p[1], (STACK_H[s.id] || 12) + 14)});
+});
+
+// ---------------------------------------------------------------- devices
+const devs = D.devices.map((d, k) => {
+  const g = new THREE.Group(); g.position.copy(V(d.x, d.y));
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.4, 16, 8), mat('#7d8380')); pole.position.y = 8; pole.castShadow = true;
+  const head = new THREE.Mesh(new THREE.BoxGeometry(9, 6, 7), mat('#f7f7f4')); head.position.y = 18; head.castShadow = true;
+  const hood = new THREE.Mesh(new THREE.BoxGeometry(10, 1.5, 8.5), mat('#c9ceca')); hood.position.y = 21.5;
+  const beaconMat = new THREE.MeshStandardMaterial({color: '#ffffff', emissive: '#ffffff', emissiveIntensity: .55, roughness: .4});
+  const beacon = new THREE.Mesh(new THREE.SphereGeometry(5.5, 20, 14), beaconMat); beacon.position.y = 28;
+  const ringMat = new THREE.MeshBasicMaterial({color: '#ffffff', transparent: true, opacity: .85, side: THREE.DoubleSide});
+  const ring = new THREE.Mesh(new THREE.RingGeometry(17, 24, 40), ringMat); ring.rotation.x = -Math.PI / 2; ring.position.y = 1.2;
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(30, 8, 6), new THREE.MeshBasicMaterial({visible: false})); hit.position.y = 20; hit.userData.k = k;
+  g.add(pole, head, hood, beacon, ring, hit); scene.add(g);
+  return {d, g, beaconMat, ringMat, hit, tag: mkTag(d.id), k};
+});
+
+// ---------------------------------------------------------------- plume particles
+const NP = reduceMotion ? 2500 : 9000;
+const pPos = new Float32Array(NP * 3), pCol = new Float32Array(NP * 3), pSize = new Float32Array(NP), pAlpha = new Float32Array(NP);
+const pAge = new Float32Array(NP).fill(1e9), pLife = new Float32Array(NP), pRise = new Float32Array(NP), pGrow = new Float32Array(NP), pMaxA = new Float32Array(NP);
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+pGeo.setAttribute('aSize', new THREE.BufferAttribute(pSize, 1));
+pGeo.setAttribute('aAlpha', new THREE.BufferAttribute(pAlpha, 1));
+const pMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, vertexColors: true,
+  vertexShader: `attribute float aSize; attribute float aAlpha; varying vec3 vC; varying float vA;
+    void main(){ vC = color; vA = aAlpha; vec4 mv = modelViewMatrix * vec4(position,1.0);
+      gl_PointSize = aSize * (1100.0 / -mv.z); gl_Position = projectionMatrix * mv; }`,
+  fragmentShader: `varying vec3 vC; varying float vA;
+    void main(){ float d = length(gl_PointCoord - 0.5); float a = smoothstep(0.5, 0.05, d) * vA;
+      if (a < 0.01) discard; gl_FragColor = vec4(vC, a); }`
+});
+const points = new THREE.Points(pGeo, pMat); points.frustumCulled = false; scene.add(points);
+let nextP = 0;
+const srcColor = SRC.map(s => new THREE.Color(COLOR[s.cls] || '#999'));
+function spawn(si, wvx, wvy) {
+  const s = SRC[si]; const i = nextP; nextP = (nextP + 1) % NP;
+  let x, y, h;
+  if (s.regional) {                       // dust front enters along the upwind edge
+    const L = Math.hypot(wvx, wvy) || 1, ux = wvx / L, uy = wvy / L, off = (rnd() - .5) * 2200;
+    x = -ux * 1150 - uy * off; y = -uy * 1150 + ux * off; h = 5 + rnd() * 90;
+  } else if (s.pt) { x = s.pt[0] + (rnd() - .5) * 18; y = s.pt[1] + (rnd() - .5) * 18; h = (STACK_H[s.id] || 3) + rnd() * 3; }
+  else { const t = rnd(); x = s.line[0][0] + t * (s.line[1][0] - s.line[0][0]) + (rnd() - .5) * 10;
+    y = s.line[0][1] + t * (s.line[1][1] - s.line[0][1]) + (rnd() - .5) * 10; h = 2 + rnd() * 3; }
+  pPos[i * 3] = x; pPos[i * 3 + 1] = h; pPos[i * 3 + 2] = -y;
+  const c = srcColor[si]; pCol[i * 3] = c.r; pCol[i * 3 + 1] = c.g; pCol[i * 3 + 2] = c.b;
+  const hot = s.cls === 'biomass_burning' || s.id in STACK_H;
+  pAge[i] = 0; pLife[i] = 26 + rnd() * 20; pRise[i] = hot ? 9 + rnd() * 8 : 1 + rnd() * 2;
+  pGrow[i] = s.regional ? 1.4 : (s.cls === 'dust' ? .9 : 1.1); pSize[i] = s.regional ? 34 : 9 + rnd() * 6;
+  pMaxA[i] = s.regional ? .16 : (s.cls === 'background' ? .2 : .42);
+}
+
+// ---------------------------------------------------------------- state
+let C = null, tSim = 0, playing = !reduceMotion, selected = null, spawnAcc = [];
+const W = D.window, HOP = D.hop;
+const nSteps = () => C.devices[0].pred.length;
+const stepAt = t => Math.max(0, Math.min(nSteps() - 1, Math.floor((t - (W - 1)) / HOP)));
+const caseDur = () => (nSteps() - 1) * HOP + W;
+function lerpAngle(a, b, f) { let d = ((b - a + 540) % 360) - 180; return a + d * f; }
+function weatherAt(t) {
+  const w = C.weather, x = Math.max(0, (t - (W - 1)) / HOP), i = Math.min(Math.floor(x), w.u.length - 1), j = Math.min(i + 1, w.u.length - 1), f = x - i;
+  return {u: w.u[i] + (w.u[j] - w.u[i]) * f, dir: (lerpAngle(w.wdir[i], w.wdir[j], f) + 360) % 360,
+          temp: w.temp[i] + (w.temp[j] - w.temp[i]) * f, rh: w.rh[i] + (w.rh[j] - w.rh[i]) * f};
+}
+function outcome(dv, s) {             // 'good' | 'bad' | 'unc' | 'off' | 'na'
+  const p = dv.pred[s], t = dv.truth[s];
+  if (p === 6 || p === 7) return 'off';
+  if (!ANSWER.has(t)) return 'na';
+  if (p === 5) return 'unc';
+  return p === t ? 'good' : 'bad';
+}
+
+// ---------------------------------------------------------------- UI
+const nav = $('cases');
+D.cases.forEach((c, i) => {
+  const b = document.createElement('button'); b.textContent = c.name; b.setAttribute('role', 'tab'); b.id = 'case-' + c.id;
+  b.onclick = () => loadCase(i); nav.appendChild(b);
+});
+$('legend').innerHTML = ['vehicle_exhaust','biomass_burning','dust','industrial','background','uncertain','sensor_fault']
+  .map(c => `<div><span class="sw" style="background:${COLOR[c]}"></span>${NICE[c]}</div>`).join('') +
+  `<div class="note">Beacon = what the device reports. Ground ring = what is really there (dominant source). Plume colour = source type; plume motion is sped up for visibility.</div>`;
+$('play').onclick = () => { playing = !playing; $('play').textContent = playing ? 'Pause' : 'Play'; };
+$('scrub').oninput = e => { tSim = e.target.value / 1000 * caseDur(); };
+$('strip').onclick = e => { const r = e.target.getBoundingClientRect(); tSim = (e.clientX - r.left) / r.width * caseDur(); };
+$('truthRing').onchange = () => devs.forEach(v => v.ringMat.visible = $('truthRing').checked);
+
+function drawStrip() {
+  const cv = $('strip'), r = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio, 2);
+  cv.width = Math.max(1, r.width * dpr); cv.height = r.height * dpr;
+  const g = cv.getContext('2d'), n = nSteps(), bw = cv.width / n, H = cv.height;
+  const col = {good: '#2e8540', bad: '#c62f2f', unc: '#b4b3ad', off: '#55544f'};
+  g.fillStyle = '#eceee9'; g.fillRect(0, 0, cv.width, H);
+  for (let s = 0; s < n; s++) {
+    const cnt = {good: 0, bad: 0, unc: 0, off: 0};
+    C.devices.forEach(dv => { const o = outcome(dv, s); if (o in cnt) cnt[o]++; });
+    let y = H;
+    for (const k of ['good', 'unc', 'off', 'bad']) { const h = cnt[k] / C.devices.length * H; g.fillStyle = col[k]; g.fillRect(s * bw, y - h, Math.ceil(bw), h); y -= h; }
+  }
+}
+function stats(s) {
+  let ans = 0, good = 0, clear = 0, nowGood = 0, nowClear = 0, faults = 0;
+  C.devices.forEach(dv => {
+    for (let k = 0; k <= s; k++) { const o = outcome(dv, k); if (o === 'na' || o === 'off') continue; clear++; if (o !== 'unc') { ans++; if (o === 'good') good++; } }
+    const o = outcome(dv, s); if (o === 'off' && dv.pred[s] === 6) faults++;
+    if (o === 'good' || o === 'bad' || o === 'unc') { nowClear++; if (o === 'good') nowGood++; }
+  });
+  $('sAcc').textContent = ans ? Math.round(100 * good / ans) + '%' : '–';
+  $('sCov').textContent = clear ? Math.round(100 * ans / clear) + '%' : '–';
+  $('sNow').textContent = nowClear ? `${nowGood}/${nowClear}` : '–';
+  $('sFault').textContent = String(faults);
+}
+function drawCompass(dir, u) {
+  const g = $('compass').getContext('2d'), R = 64;
+  g.clearRect(0, 0, 128, 128); g.strokeStyle = '#cfd4cf'; g.lineWidth = 3; g.beginPath(); g.arc(R, R, 54, 0, 7); g.stroke();
+  g.fillStyle = '#8b948f'; g.font = '600 20px IBM Plex Sans, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('N', R, 18);
+  const a = (dir + 180) * Math.PI / 180, L = 22 + Math.min(u, 7) * 4;   // arrow points where the air goes
+  g.save(); g.translate(R, R); g.rotate(a); g.strokeStyle = '#1d2321'; g.fillStyle = '#1d2321'; g.lineWidth = 5;
+  g.beginPath(); g.moveTo(0, L * .6); g.lineTo(0, -L * .6); g.stroke();
+  g.beginPath(); g.moveTo(0, -L * .6 - 12); g.lineTo(-9, -L * .6 + 4); g.lineTo(9, -L * .6 + 4); g.fill(); g.restore();
+}
+const hhmm = t => { const h = (C.start + t / 3600) % 24; return String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.floor((h % 1) * 60)).padStart(2, '0'); };
+const compassName = d => ['N','NE','E','SE','S','SW','W','NW'][Math.round(d / 45) % 8];
+
+function nearest(d) {
+  return SRC.filter(s => !s.regional).map(s => {
+    let px, py;
+    if (s.pt) [px, py] = s.pt; else { const [[x1, y1], [x2, y2]] = s.line, vx = x2 - x1, vy = y2 - y1;
+      const t = Math.max(0, Math.min(1, ((d.x - x1) * vx + (d.y - y1) * vy) / (vx * vx + vy * vy))); px = x1 + t * vx; py = y1 + t * vy; }
+    return {s, dist: Math.hypot(px - d.x, py - d.y), brg: (Math.atan2(px - d.x, py - d.y) * 180 / Math.PI + 360) % 360};
+  }).filter((v, i, a) => a.findIndex(w => w.s.label === v.s.label) === i).sort((a, b) => a.dist - b.dist).slice(0, 3);
+}
+function renderPanel(s) {
+  if (selected === null) return;
+  const v = devs[selected], dv = C.devices[selected], p = CLS[dv.pred[s]], t = CLS[dv.truth[s]];
+  const fault = C.faults[v.d.id];
+  const o = outcome(dv, s);
+  const verdict = {good: '<span style="color:var(--good)">correct</span>', bad: '<span style="color:var(--bad)">wrong</span>',
+    unc: 'abstained', off: 'no output', na: 'not scored (no single dominant source)'}[o];
+  $('panel').innerHTML = `<h2>${v.d.id} <button class="x" id="closeP" aria-label="Close">×</button></h2>
+    <div class="src">Prototype unit ${v.d.unit} · ${v.d.x} m E, ${v.d.y} m N</div>
+    <div class="row"><span class="lbl">Reports</span><span class="pill"><span class="sw" style="background:${COLOR[p]}"></span>${NICE[p]}</span></div>
+    <div class="row"><span class="lbl">Really there</span><span class="pill"><span class="sw" style="background:${COLOR[t]}"></span>${NICE[t]}</span></div>
+    <div class="row"><span class="lbl">Verdict</span><span>${verdict}</span></div>
+    <div class="row" style="display:block"><span class="lbl">Confidence ${dv.conf[s]}% (gate ${Math.round(D.conf_thr * 100)}%)</span><div class="bar"><i style="width:${dv.conf[s]}%"></i></div></div>
+    <div class="row"><span class="lbl">PM2.5 sensor / true</span><span class="val">${dv.pm[s]} / ${dv.pm_true[s]} µg/m³</span></div>
+    <div class="row"><span class="lbl">Largest local share</span><span class="val">${dv.share[s]}%</span></div>
+    ${fault ? `<div class="row"><span class="lbl">Injected fault</span><span class="fault">${Object.keys(fault)[0].replace(/_/g, ' ')}</span></div>` : ''}
+    <div class="lbl" style="margin-top:10px">Whole case: reported (top) vs true (bottom)</div>
+    <canvas id="hist"></canvas>
+    <div class="lbl" style="margin-top:8px">Nearest sources</div>
+    ${nearest(v.d).map(n => `<div class="src">${n.s.label}: ${Math.round(n.dist)} m ${compassName(n.brg)}</div>`).join('')}
+    <button class="btn openDev" id="openDev">Open ${v.d.id} in Devices view</button>`;
+  $('openDev').onclick = () => { devSel = selected; setView(true); };
+  $('closeP').onclick = () => { selected = null; $('panel').hidden = true; };
+  const cv = $('hist'), r = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio, 2);
+  cv.width = r.width * dpr; cv.height = r.height * dpr; const g = cv.getContext('2d'), n = nSteps(), bw = cv.width / n, h = cv.height / 2 - 2;
+  for (let k = 0; k < n; k++) { g.fillStyle = COLOR[CLS[dv.pred[k]]]; g.fillRect(k * bw, 0, Math.ceil(bw), h);
+    g.fillStyle = COLOR[CLS[dv.truth[k]]]; g.fillRect(k * bw, h + 4, Math.ceil(bw), h); }
+  g.fillStyle = '#1d2321'; g.fillRect(s * bw - dpr, 0, 2 * dpr, cv.height);
+}
+
+function loadCase(i) {
+  C = D.cases[i]; tSim = 0; spawnAcc = SRC.map(() => 0);
+  pAge.fill(1e9); pAlpha.fill(0);
+  [...nav.children].forEach((b, k) => b.setAttribute('aria-selected', String(k === i)));
+  $('blurb').textContent = C.blurb;
+  drawStrip(); lastStep = -1; lastPanel = -1; devDrawnFor = ''; layoutDev();
+  if (devMode) renderDev(0);
+  try { localStorage.setItem('polso-case', C.id); } catch (e) {}
+}
+
+// ---------------------------------------------------------------- devices view (one tab per device)
+let devMode = false, devSel = 0, devDrawnFor = '';
+function setView(dev) {
+  devMode = dev;
+  document.body.classList.toggle('dev-mode', dev);
+  $('devView').hidden = !dev;
+  $('vMap').setAttribute('aria-selected', String(!dev)); $('vDev').setAttribute('aria-selected', String(dev));
+  layoutDev(); devDrawnFor = ''; lastStep = -1;
+  if (dev && C) renderDev(stepAt(tSim));
+  try { localStorage.setItem('polso-view', dev ? 'dev' : 'map'); } catch (e) {}
+}
+$('vMap').onclick = () => setView(false);
+$('vDev').onclick = () => setView(true);
+function layoutDev() {
+  const b = document.querySelector('.brand').getBoundingClientRect();
+  document.documentElement.style.setProperty('--topH', (b.bottom + 12) + 'px');
+}
+function buildDevTabs() {
+  $('devTabs').innerHTML = devs.map((v, k) => `<button role="tab" id="dtab-${k}" aria-selected="${k === devSel}" tabindex="${k === devSel ? 0 : -1}">
+    <span class="sw" id="ddot-${k}"></span><b>${v.d.id}</b><span class="l" id="dlab-${k}"></span><em id="dmark-${k}" style="font-style:normal"></em></button>`).join('');
+  devs.forEach((v, k) => { $('dtab-' + k).onclick = () => { devSel = k; devDrawnFor = ''; renderDev(stepAt(tSim)); }; });
+  $('devTabs').onkeydown = e => {
+    const d = {ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1}[e.key]; if (!d) return;
+    e.preventDefault(); devSel = (devSel + d + devs.length) % devs.length; devDrawnFor = ''; renderDev(stepAt(tSim)); $('dtab-' + devSel).focus();
+  };
+}
+function devStats(dv) {
+  let ans = 0, good = 0, clear = 0, fault = 0, err = 0, nerr = 0;
+  dv.pred.forEach((p, s) => {
+    const o = outcome(dv, s); if (p === 6) fault++;
+    if (o !== 'na' && o !== 'off') { clear++; if (o !== 'unc') { ans++; if (o === 'good') good++; } }
+    if (p !== 6 && p !== 7) { err += Math.abs(dv.pm[s] - dv.pm_true[s]); nerr++; }
+  });
+  return {acc: ans ? good / ans : NaN, cov: clear ? ans / clear : NaN, fault, mae: nerr ? err / nerr : NaN};
+}
+const pct = x => isNaN(x) ? '–' : Math.round(100 * x) + '%';
+const key = c => `<span><span class="sw" style="display:inline-block;width:9px;height:9px;vertical-align:-1px;margin-right:4px;background:${COLOR[c]}"></span>${NICE[c]}</span>`;
+function devDetailHTML(k) {
+  const v = devs[k], dv = C.devices[k], st = devStats(dv), fault = C.faults[v.d.id];
+  return `<div class="dh"><h2>${v.d.id}</h2><span class="src">Prototype unit ${v.d.unit} · ${v.d.x} m E, ${v.d.y} m N · ${C.name}</span>
+      ${fault ? `<span class="badge fault">Fault injected: ${Object.keys(fault)[0].replace(/_/g, ' ')}</span>`
+              : '<span class="badge" style="color:var(--good)">No injected faults</span>'}</div>
+    <div class="kp"><div><b>${pct(st.acc)}</b><span class="lbl">Correct when answering</span></div>
+      <div><b>${pct(st.cov)}</b><span class="lbl">Answered (not uncertain)</span></div>
+      <div><b>${st.fault}</b><span class="lbl">Fault windows of ${dv.pred.length}</span></div>
+      <div><b>${isNaN(st.mae) ? '–' : st.mae.toFixed(0)}</b><span class="lbl">Mean PM2.5 error, µg/m³</span></div></div>
+    <div class="nowrow" id="dNow"></div>
+    <figure class="chart"><figcaption>Reported (top) vs really there (bottom)<span id="r1"></span></figcaption><canvas id="c1" height="70"></canvas>
+      <div class="ck">${['vehicle_exhaust','biomass_burning','dust','industrial','background','uncertain','sensor_fault','mixed'].map(key).join('')}</div></figure>
+    <figure class="chart"><figcaption>Model confidence<span id="r2"></span></figcaption><canvas id="c2" height="120"></canvas>
+      <div class="ck"><span><i style="background:#1d2321"></i>confidence of the top class</span><span><i style="background:#c62f2f"></i>gate ${Math.round(D.conf_thr * 100)}% (below = uncertain)</span></div></figure>
+    <figure class="chart"><figcaption>PM2.5, sensor vs true<span id="r3"></span></figcaption><canvas id="c3" height="140"></canvas>
+      <div class="ck"><span><i style="background:#2a78d6"></i>PMS7003 reading</span><span><i style="background:#8b948f"></i>true PM2.5 at the device</span></div></figure>
+    <div class="two"><figure class="chart"><figcaption>Largest local source share<span id="r4"></span></figcaption><canvas id="c4" height="110"></canvas>
+      <div class="ck"><span><i style="background:#4a3aa7"></i>share of PM2.5 from the biggest local source</span><span><i style="background:#b4b3ad"></i>40 % = counts as dominant</span></div></figure>
+      <figure class="chart"><figcaption>Location and wind</figcaption><canvas id="miniMap" width="440" height="440"></canvas>
+      ${nearest(v.d).map(n => `<div class="src">${n.s.label}: ${Math.round(n.dist)} m ${compassName(n.brg)}</div>`).join('')}</figure></div>`;
+}
+function setupCanvas(cv) {
+  const r = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio, 2), h = Number(cv.dataset.h || cv.getAttribute('height'));
+  cv.dataset.h = h; cv.style.height = h + 'px'; cv.width = Math.max(1, r.width * dpr); cv.height = h * dpr;
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); return {g, w: r.width, h};
+}
+const PADL = 38, PADB = 16;
+const X = (s, w) => PADL + s / Math.max(1, nSteps() - 1) * (w - PADL);
+function hourTicks(g, w, h) {
+  g.font = '10px IBM Plex Mono, monospace'; g.fillStyle = '#8b948f'; g.textAlign = 'center';
+  for (let hr = 1; hr <= Math.floor(caseDur() / 3600); hr++) {
+    const x = X((hr * 3600 - (W - 1)) / HOP, w); g.fillText(hhmm(hr * 3600), Math.min(x, w - 16), h - 3);
+  }
+}
+function axes(g, w, h, ymax, unit) {
+  g.font = '10px IBM Plex Mono, monospace'; g.strokeStyle = '#e3e6e2'; g.lineWidth = 1;
+  for (let k = 0; k <= 2; k++) {
+    const y = 4 + (h - PADB - 4) * (1 - k / 2); g.beginPath(); g.moveTo(PADL, y); g.lineTo(w, y); g.stroke();
+    g.fillStyle = '#8b948f'; g.textAlign = 'right'; g.fillText(Math.round(ymax * k / 2) + unit, PADL - 5, y + 3);
+  }
+  hourTicks(g, w, h);
+}
+function line(g, w, h, data, ymax, color, width) {
+  g.strokeStyle = color; g.lineWidth = width; g.lineJoin = 'round'; g.beginPath();
+  data.forEach((v, s) => { const x = X(s, w), y = 4 + (h - PADB - 4) * (1 - Math.min(v, ymax) / ymax); s ? g.lineTo(x, y) : g.moveTo(x, y); });
+  g.stroke();
+}
+function cursor(g, w, h, s) { g.fillStyle = '#1d2321'; g.fillRect(X(s, w) - 1, 0, 2, h - PADB + 2); }
+function dashed(g, w, y, color) { g.setLineDash([4, 3]); g.strokeStyle = color; g.lineWidth = 1.2; g.beginPath(); g.moveTo(PADL, y); g.lineTo(w, y); g.stroke(); g.setLineDash([]); }
+function drawDevCharts(k, s) {
+  const dv = C.devices[k], n = nSteps();
+  let {g, w, h} = setupCanvas($('c1'));
+  const bw = (w - PADL) / n, hh = (h - PADB) / 2 - 2;
+  g.font = '10px IBM Plex Sans, sans-serif'; g.fillStyle = '#8b948f'; g.textAlign = 'right';
+  g.fillText('device', PADL - 5, hh / 2 + 3); g.fillText('truth', PADL - 5, hh + 4 + hh / 2 + 3);
+  for (let i = 0; i < n; i++) {
+    g.fillStyle = COLOR[CLS[dv.pred[i]]]; g.fillRect(PADL + i * bw, 0, Math.ceil(bw), hh);
+    g.fillStyle = COLOR[CLS[dv.truth[i]]]; g.fillRect(PADL + i * bw, hh + 4, Math.ceil(bw), hh);
+  }
+  hourTicks(g, w, h); cursor(g, w, h, s);
+  ({g, w, h} = setupCanvas($('c2'))); axes(g, w, h, 100, '%');
+  dashed(g, w, 4 + (h - PADB - 4) * (1 - D.conf_thr), '#c62f2f');
+  line(g, w, h, dv.conf, 100, '#1d2321', 1.4); cursor(g, w, h, s);
+  const ymax = Math.max(20, ...dv.pm, ...dv.pm_true) * 1.08;
+  ({g, w, h} = setupCanvas($('c3'))); axes(g, w, h, ymax, '');
+  line(g, w, h, dv.pm_true, ymax, '#8b948f', 2); line(g, w, h, dv.pm, ymax, '#2a78d6', 1.4); cursor(g, w, h, s);
+  ({g, w, h} = setupCanvas($('c4'))); axes(g, w, h, 100, '%');
+  dashed(g, w, 4 + (h - PADB - 4) * 0.6, '#b4b3ad');
+  line(g, w, h, dv.share, 100, '#4a3aa7', 1.6); cursor(g, w, h, s);
+  // location map with the device highlighted and the current wind
+  const m = $('miniMap').getContext('2d'), S = 440, sc = S / 2200, P = (x, y) => [S / 2 + x * sc, S / 2 - y * sc];
+  m.clearRect(0, 0, S, S); m.fillStyle = '#e8ebe7'; m.fillRect(0, 0, S, S);
+  m.strokeStyle = '#8b908d'; m.lineWidth = 7; m.beginPath();
+  m.moveTo(...P(-1000, -450)); m.lineTo(...P(1000, -450)); m.moveTo(...P(150, -1000)); m.lineTo(...P(150, 1000)); m.stroke();
+  SRC.filter(q => q.pt).forEach(q => { m.fillStyle = COLOR[q.cls]; m.beginPath(); m.arc(...P(...q.pt), 9, 0, 7); m.fill(); });
+  devs.forEach((d, j) => {
+    m.fillStyle = j === k ? '#1d2321' : '#ffffff'; m.strokeStyle = '#1d2321'; m.lineWidth = 2;
+    m.beginPath(); m.arc(...P(d.d.x, d.d.y), j === k ? 13 : 7, 0, 7); m.fill(); m.stroke();
+  });
+  m.fillStyle = '#1d2321'; m.font = '600 22px IBM Plex Mono, monospace'; m.textAlign = 'center';
+  m.fillText(devs[k].d.id, ...P(devs[k].d.x, devs[k].d.y + 110));
+  const wv = weatherAt(tSim); m.save(); m.translate(S - 42, 42); m.rotate((wv.dir + 180) * Math.PI / 180);
+  m.strokeStyle = '#1d2321'; m.lineWidth = 4; m.beginPath(); m.moveTo(0, 20); m.lineTo(0, -14); m.stroke();
+  m.beginPath(); m.moveTo(0, -26); m.lineTo(-9, -11); m.lineTo(9, -11); m.fill(); m.restore();
+}
+function readout(k, s) {
+  const dv = C.devices[k], p = CLS[dv.pred[s]], t = CLS[dv.truth[s]], o = outcome(dv, s);
+  const verdict = {good: '<span style="color:var(--good)">correct</span>', bad: '<span style="color:var(--bad)">wrong</span>',
+    unc: 'abstained (uncertain)', off: 'no output', na: 'not scored (no single dominant source)'}[o];
+  $('dNow').innerHTML = `<div class="row"><span class="lbl">At ${hhmm(tSim)} reports</span><span class="pill"><span class="sw" style="background:${COLOR[p]}"></span>${NICE[p]} · ${dv.conf[s]}%</span></div>
+    <div class="row"><span class="lbl">Really there</span><span class="pill"><span class="sw" style="background:${COLOR[t]}"></span>${NICE[t]}</span></div>
+    <div class="row"><span class="lbl">Verdict</span><span>${verdict}</span></div>
+    <div class="row"><span class="lbl">PM2.5 sensor / true</span><span class="val">${dv.pm[s]} / ${dv.pm_true[s]} µg/m³</span></div>`;
+  $('r1').textContent = `${NICE[p]} / ${NICE[t]}`; $('r2').textContent = `${dv.conf[s]}%`;
+  $('r3').textContent = `${dv.pm[s]} / ${dv.pm_true[s]} µg/m³`; $('r4').textContent = `${dv.share[s]}%`;
+}
+function updateDevTabs(s) {
+  devs.forEach((v, k) => {
+    const dv = C.devices[k], o = outcome(dv, s), p = CLS[dv.pred[s]], b = $('dtab-' + k);
+    b.setAttribute('aria-selected', String(k === devSel)); b.tabIndex = k === devSel ? 0 : -1;
+    $('ddot-' + k).style.background = COLOR[p]; $('dlab-' + k).textContent = NICE[p];
+    $('dmark-' + k).innerHTML = o === 'good' ? '<span style="color:var(--good)">✓</span>' : o === 'bad' ? '<span style="color:var(--bad)">✗</span>'
+      : o === 'unc' ? '?' : o === 'off' ? '⚠' : '';
+  });
+}
+function renderDev(s) {
+  const k = C.id + ':' + devSel;
+  if (devDrawnFor !== k) {
+    $('devDetail').innerHTML = devDetailHTML(devSel); devDrawnFor = k;
+    ['c1', 'c2', 'c3', 'c4'].forEach(id => {
+      const cv = $(id);
+      const at = e => { const r = cv.getBoundingClientRect(); return Math.max(0, Math.min(nSteps() - 1, Math.round((e.clientX - r.left - PADL) / (r.width - PADL) * (nSteps() - 1)))); };
+      cv.onclick = e => { tSim = at(e) * HOP + W - 1; };
+      cv.onmousemove = e => {
+        const i = at(e), dv = C.devices[devSel], tip = $('tip');
+        tip.innerHTML = `<b>${hhmm(i * HOP + W - 1)}</b> · reports <b>${NICE[CLS[dv.pred[i]]]}</b> (${dv.conf[i]}%)<br>Really: ${NICE[CLS[dv.truth[i]]]}<br>PM2.5 sensor ${dv.pm[i]} / true ${dv.pm_true[i]} µg/m³ · local share ${dv.share[i]}%<br><span class="src">Click to jump here</span>`;
+        tip.style.visibility = 'visible'; tip.hidden = false;
+        tip.style.left = Math.min(e.clientX + 14, innerWidth - 250) + 'px'; tip.style.top = (e.clientY + 14) + 'px';
+      };
+      cv.onmouseleave = () => { $('tip').hidden = true; $('tip').style.visibility = ''; };
+    });
+  }
+  updateDevTabs(s); readout(devSel, s); drawDevCharts(devSel, s);
+}
+
+// ---------------------------------------------------------------- picking
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+function pick(ev) {
+  const r = renderer.domElement.getBoundingClientRect();
+  mouse.set((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const hit = ray.intersectObjects(devs.map(v => v.hit))[0];
+  return hit ? hit.object.userData.k : null;
+}
+let downAt = null;
+renderer.domElement.addEventListener('pointerdown', e => downAt = [e.clientX, e.clientY]);
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 5) return;
+  const k = pick(e); selected = k; $('panel').hidden = k === null; lastPanel = -1;
+});
+renderer.domElement.addEventListener('pointermove', e => {
+  const k = pick(e), tip = $('tip');
+  renderer.domElement.style.cursor = k === null ? '' : 'pointer';
+  if (k === null) { tip.hidden = true; return; }
+  const s = stepAt(tSim), dv = C.devices[k];
+  tip.innerHTML = `<b>${devs[k].d.id}</b> reports <b>${NICE[CLS[dv.pred[s]]]}</b> (${dv.conf[s]}%)<br>Really: ${NICE[CLS[dv.truth[s]]]} · PM2.5 ${dv.pm_true[s]} µg/m³<br><span class="src">Click for details</span>`;
+  tip.style.left = Math.min(e.clientX + 14, innerWidth - 250) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; tip.hidden = false;
+});
+
+// ---------------------------------------------------------------- loop
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  if (C) { drawStrip(); layoutDev(); devDrawnFor = ''; lastStep = -1; }
+}
+addEventListener('resize', resize);
+let last = performance.now(), lastStep = -1, lastPanel = -1;
+const proj = new THREE.Vector3();
+function place(el, pos) {
+  proj.copy(pos).project(camera);
+  if (proj.z > 1) { el.style.display = 'none'; return; }
+  el.style.display = ''; el.style.left = ((proj.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - proj.y) / 2 * innerHeight) + 'px';
+}
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (playing) { tSim += dt * Number($('speed').value); if (tSim >= caseDur()) tSim = 0; }
+  const s = stepAt(tSim), w = weatherAt(tSim);
+  $('scrub').value = Math.round(tSim / caseDur() * 1000);
+  $('clock').textContent = hhmm(tSim);
+  $('trh').textContent = `${w.temp.toFixed(1)} °C · ${Math.round(w.rh)} %`;
+  $('wind').textContent = `${w.u.toFixed(1)} m/s from ${compassName(w.dir)}`;
+  drawCompass(w.dir, w.u);
+
+  if (devMode) {
+    if (s !== lastStep) { lastStep = s; stats(s); renderDev(s); }
+    requestAnimationFrame(frame); return;
+  }
+  if (s !== lastStep) {
+    lastStep = s; stats(s);
+    let pmSum = 0;
+    devs.forEach((v, k) => {
+      const dv = C.devices[k], p = CLS[dv.pred[s]], t = CLS[dv.truth[s]], o = outcome(dv, s);
+      v.beaconMat.color.set(COLOR[p]); v.beaconMat.emissive.set(COLOR[p]);
+      v.ringMat.color.set(COLOR[t]);
+      v.tag.innerHTML = `${v.d.id} ${o === 'good' ? '<span class="ok">✓</span>' : o === 'bad' ? '<span class="no">✗</span>' : o === 'unc' ? '?' : o === 'off' ? '⚠' : ''}`;
+      pmSum += dv.pm_true[s];
+    });
+    // haze tint follows the mean true PM2.5 across the array; fog cases whiten and close in
+    const pm = pmSum / devs.length, fogF = Math.max(0, (w.rh - 88) / 10);
+    const c = BG.clone().lerp(HAZE, Math.min(1, pm / 320)).lerp(FOG, Math.min(1, fogF));
+    scene.background.copy(c); scene.fog.color.copy(c);
+    scene.fog.near = 2600 - Math.min(1, pm / 300) * 1500 - fogF * 900; scene.fog.far = 6500 - Math.min(1, pm / 300) * 2500 - fogF * 2600;
+  }
+  if (selected !== null && lastPanel !== s) { lastPanel = s; renderPanel(s); }
+  // faulty devices blink
+  devs.forEach((v, k) => { if (C.devices[k].pred[s] === 6) v.beaconMat.emissiveIntensity = .2 + .5 * (Math.sin(now / 180) > 0); else v.beaconMat.emissiveIntensity = .55; });
+
+  // plumes
+  const dirTo = (w.dir + 180) * Math.PI / 180, VIS = 22, wvx = Math.sin(dirTo) * w.u * VIS, wvy = Math.cos(dirTo) * w.u * VIS;
+  const fx = Math.max(0, (tSim - (W - 1)) / HOP), i0 = Math.min(Math.floor(fx), nSteps() - 1);
+  if (playing || true) SRC.forEach((src, si) => {
+    const a = C.activity[src.id]; if (!a) return;
+    const act = a[i0] || 0, rate = (src.regional ? 160 : 1.6 * Math.sqrt(src.q)) * act * (reduceMotion ? .3 : 1);
+    spawnAcc[si] += rate * dt; while (spawnAcc[si] >= 1) { spawn(si, wvx, wvy); spawnAcc[si] -= 1; }
+  });
+  for (let i = 0; i < NP; i++) {
+    if (pAge[i] > pLife[i]) { pAlpha[i] = 0; continue; }
+    pAge[i] += dt; const f = pAge[i] / pLife[i];
+    pPos[i * 3] += (wvx + (rnd() - .5) * 30) * dt;
+    pPos[i * 3 + 2] -= (wvy + (rnd() - .5) * 30) * dt;
+    pPos[i * 3 + 1] = Math.max(1, pPos[i * 3 + 1] + (pRise[i] * (1 - f) + (rnd() - .5) * 4) * dt);
+    pSize[i] += pGrow[i] * dt * 3;
+    pAlpha[i] = pMaxA[i] * Math.min(1, f * 6) * (1 - f);
+    if (Math.abs(pPos[i * 3]) > 1300 || Math.abs(pPos[i * 3 + 2]) > 1300) pAge[i] = 1e9;
+  }
+  pGeo.attributes.position.needsUpdate = pGeo.attributes.aSize.needsUpdate = pGeo.attributes.aAlpha.needsUpdate = pGeo.attributes.color.needsUpdate = true;
+
+  // traffic
+  const traffic = Math.max(.15, ((C.activity.highway_diesel || [1])[i0] || .5));
+  carState.forEach((c, i) => {
+    c.s += c.dir * c.v * 60 * dt * Math.min(2, traffic); if (c.s > 1000) c.s = -1000; if (c.s < -1000) c.s = 1000;
+    if (c.road === 0) { tmp.position.copy(V(c.s, -450 + c.dir * 7, 1.9)); tmp.rotation.y = 0; }
+    else { tmp.position.copy(V(150 + c.dir * 5, c.s, 1.9)); tmp.rotation.y = Math.PI / 2; }
+    tmp.scale.setScalar(1); tmp.updateMatrix(); cars.setMatrixAt(i, tmp.matrix);
+  });
+  cars.instanceMatrix.needsUpdate = true;
+
+  controls.update();
+  renderer.render(scene, camera);
+  devs.forEach(v => place(v.tag, v.g.position.clone().setY(40)));
+  srcTags.forEach(t => place(t.el, t.pos));
+  requestAnimationFrame(frame);
+}
+
+let startIdx = 0;
+try { const k = D.cases.findIndex(c => c.id === localStorage.getItem('polso-case')); if (k >= 0) startIdx = k; } catch (e) {}
+buildDevTabs();
+resize(); loadCase(startIdx);
+try { if (localStorage.getItem('polso-view') === 'dev') setView(true); } catch (e) {}
+$('play').textContent = playing ? 'Pause' : 'Play';
+requestAnimationFrame(frame);
+</script>
