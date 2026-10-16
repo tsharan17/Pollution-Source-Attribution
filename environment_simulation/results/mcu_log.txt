@@ -1,0 +1,38 @@
+[1/5] operation counts and cycle model
+  v0 Reference firmware                 hop cycles nominal    80,861 (low 52,176, high 154,671)
+  v1 + log10 cached per second          hop cycles nominal    62,057 (low 40,559, high 117,816)
+  v2 + humidity term every 10 s         hop cycles nominal    56,959 (low 36,863, high 108,294)
+  v3 + polynomial log / exp             hop cycles nominal    47,537 (low 31,205, high 89,339)
+  v4 + SIMD int8 MLP (estimated)        hop cycles nominal    44,322 (low 28,977, high 84,119)
+[2/5] schedule and power-state simulation
+  A0  Typical starter project                          avg  8.03 mA (range 5.03-14.05)  run 0.340% sleep 99.7% stop 0.0%
+  A1  + tickless idle (Stop 1)                         avg  4.27 mA (range 2.67-7.50)  run 0.132% sleep 52.8% stop 47.1%
+  A2  + DMA-driven SD, RMC-only GPS, lean parser       avg  0.90 mA (range 0.55-1.62)  run 0.044% sleep 10.5% stop 89.5%
+  A3  + register-level (LL) drivers                    avg  0.90 mA (range 0.55-1.62)  run 0.039% sleep 10.5% stop 89.5%
+  A4  + optimised computation (v3)                     avg  0.90 mA (range 0.55-1.62)  run 0.038% sleep 10.5% stop 89.5%
+[3/5] memory budget and platform plan
+[4/5] model families on the MCU
+  pareto data: train 19500 windows, test 6000
+    Logistic       linear       F1 0.900 [0.844-0.937]  flash     0.7 KB  cycles     1,825
+    MLP int8       8            F1 0.926 [0.882-0.953]  flash     0.5 KB  cycles     2,336
+    MLP int8       16           F1 0.932 [0.887-0.956]  flash     0.7 KB  cycles     3,272
+    MLP int8       16-8         F1 0.936 [0.901-0.962]  flash     0.9 KB  cycles     3,676
+    MLP int8       32-16        F1 0.937 [0.901-0.958]  flash     1.8 KB  cycles     6,848
+    MLP int8       64-32        F1 0.939 [0.907-0.960]  flash     4.3 KB  cycles    15,880
+    MLP int8       128-64       F1 0.957 [0.928-0.972]  flash    12.4 KB  cycles    44,696
+    Decision tree  depth 6      F1 0.834 [0.771-0.868]  flash     0.7 KB  cycles       281
+    Decision tree  depth 10     F1 0.847 [0.791-0.885]  flash     2.5 KB  cycles       319
+    Random forest  10 trees d6  F1 0.874 [0.823-0.909]  flash     7.1 KB  cycles     1,009
+    Random forest  10 trees d10 F1 0.934 [0.901-0.959]  flash    31.0 KB  cycles     1,389
+    Random forest  30 trees d8  F1 0.923 [0.888-0.954]  flash    51.7 KB  cycles     3,239
+    Random forest  30 trees d12 F1 0.950 [0.929-0.969]  flash   119.4 KB  cycles     4,157
+    Random forest  100 trees d8 F1 0.918 [0.880-0.947]  flash   168.3 KB  cycles    10,335
+    Random forest  100 trees d12 F1 0.949 [0.922-0.967]  flash   399.3 KB  cycles    13,429
+    ablation all 25 features                    MLP 0.937  RF 0.923
+    ablation without pm_gas_corr                MLP 0.925  RF 0.921
+    ablation without pm_gas_corr + skew + cv    MLP 0.919  RF 0.914
+[5/5] PMS duty-cycling policies
+    continuous: duty 100%, held acc 86%, episodes 81%, delay 120s; periodic 1/3: duty 33%, held acc 84%, episodes 78%, delay 120s; periodic 1/6: duty 17%, held acc 79%, episodes 62%, delay 180s; adaptive: duty 69%, held acc 80%, episodes 77%, delay 120s
+    continuous: duty 100%, held acc 96%, episodes 67%, delay 90s; periodic 1/3: duty 33%, held acc 95%, episodes 60%, delay 60s; periodic 1/6: duty 17%, held acc 93%, episodes 47%, delay 165s; adaptive: duty 18%, held acc 69%, episodes 49%, delay 120s
+done in 8.0 min -> results/mcu_results.pkl
+MCU_DONE

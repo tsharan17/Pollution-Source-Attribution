@@ -160,7 +160,7 @@ def qmodel_forward(qm, X):
 # Device
 # ---------------------------------------------------------------------------
 def run_device(streams, qm, conf_thr=None, use_ema=True, track_baseline=True,
-               window=P.FW_WINDOW_S, hop=P.FW_HOP_S):
+               window=P.FW_WINDOW_S, hop=P.FW_HOP_S, pm_valid_frac=None, calib=None):
     """Run the firmware over a whole stream. Returns a dict of per-window arrays."""
     if conf_thr is None:
         conf_thr = qm["conf_thr"] if qm is not None else 1.0
@@ -216,7 +216,8 @@ def run_device(streams, qm, conf_thr=None, use_ema=True, track_baseline=True,
             continue
         gv = gas_ok[a:b]
         groups_seen = np.unique(GROUP_OF_STEP[step[a:b][gv]]).size
-        if pm_ok[a:b].mean() < P.FW_PM_VALID_FRAC or gv.mean() < P.FW_GAS_VALID_FRAC \
+        if pm_ok[a:b].mean() < (P.FW_PM_VALID_FRAC if pm_valid_frac is None else pm_valid_frac) \
+                or gv.mean() < P.FW_GAS_VALID_FRAC \
                 or groups_seen < len(P.HEATER_GROUPS):
             status[w] = P.FAULT
             continue
@@ -241,6 +242,16 @@ def run_device(streams, qm, conf_thr=None, use_ema=True, track_baseline=True,
         k = int(np.argmax(probs[w]))
         labels[w] = P.CLASSES[k] if probs[w, k] >= conf_thr else P.UNCERTAIN
 
+    # ---- reporting layer: corrected PM2.5, 5-min average with band, 10-min dominant source ----
+    pm_raw = np.full(len(ends), np.nan)
+    rh_win = np.full(len(ends), np.nan)
+    for w, e in enumerate(ends):
+        if valid[w]:
+            a, b = e - window + 1, e + 1
+            pm_raw[w] = cf1[a:b][pm_ok[a:b]][:, 1].mean()
+            rh_win[w] = feats[w][23] * 100.0
+    rep = report_layer(labels, valid, pm_raw, rh_win, calib)
+
     # ---- SD logging with write failures and a 16-record retry buffer ----
     rng = np.random.default_rng(streams.get("seed", 0) + 31)
     pending, lost, written = 0, 0, 0
@@ -255,4 +266,45 @@ def run_device(streams, qm, conf_thr=None, use_ema=True, track_baseline=True,
     return dict(t_end=ends, features=feats, probs=probs, probs_raw=probs_raw, label=labels,
                 status=status, pms_errors=pms_errors, sd_written=written, sd_lost=lost,
                 sd_pending=pending, pm_ok=pm_ok, gas_ok=gas_ok, baseline_final=base,
-                cum=cum, r=r)
+                cum=cum, r=r, pm_raw=pm_raw, rh_win=rh_win, **rep)
+
+
+# ---------------------------------------------------------------------------
+# Reporting layer (identical to fw_report() in polso_fw.c)
+# ---------------------------------------------------------------------------
+REP_PM_N = 10           # 5-minute PM2.5 average: last 10 windows
+REP_LAB_N = 20          # 10-minute dominant source: last 20 windows
+REP_MIN_ANSWERS = 6     # at least 3 minutes of answers before naming a source
+REP_MAJORITY = 0.5      # the named source must hold at least half of the answers
+
+
+def report_layer(labels, valid, pm_raw, rh_win, calib=None):
+    if calib is None:
+        from . import pmcal
+        calib = pmcal.load()
+    keys = P.CLASSES + ["unknown"]
+    n = len(labels)
+    pm_corr, pm_lo, pm_hi = np.full(n, np.nan), np.full(n, np.nan), np.full(n, np.nan)
+    pm5, pm5_lo, pm5_hi = np.full(n, np.nan), np.full(n, np.nan), np.full(n, np.nan)
+    lab10 = np.empty(n, object)
+    for w in range(n):
+        if valid[w]:
+            c = calib[labels[w] if labels[w] in P.CLASSES else "unknown"]
+            a = min(max(rh_win[w], 0.0), 95.0) / 100.0
+            corr = np.exp(c["beta"] + c["alpha"] * np.log(max(pm_raw[w], 0.0) + 1e-6)) / (1.0 + c["kappa"] * a / (1.0 - a))
+            pm_corr[w], pm_lo[w], pm_hi[w] = corr, corr * np.exp(c["q16"]), corr * np.exp(c["q84"])
+        lo = max(0, w - REP_PM_N + 1)
+        m = valid[lo:w + 1]
+        if m.any():
+            pm5[w], pm5_lo[w], pm5_hi[w] = (pm_corr[lo:w + 1][m].mean(), pm_lo[lo:w + 1][m].mean(), pm_hi[lo:w + 1][m].mean())
+        lo = max(0, w - REP_LAB_N + 1)
+        ans = [l for l in labels[lo:w + 1] if l in P.CLASSES]
+        if not valid[w]:
+            lab10[w] = labels[w]
+        elif len(ans) >= REP_MIN_ANSWERS:
+            vals, cnt = np.unique(ans, return_counts=True)
+            k = int(np.argmax(cnt))
+            lab10[w] = vals[k] if cnt[k] >= REP_MAJORITY * len(ans) else P.MIXED
+        else:
+            lab10[w] = P.UNCERTAIN
+    return dict(pm_corr=pm_corr, pm_lo=pm_lo, pm_hi=pm_hi, pm5=pm5, pm5_lo=pm5_lo, pm5_hi=pm5_hi, label10=lab10)

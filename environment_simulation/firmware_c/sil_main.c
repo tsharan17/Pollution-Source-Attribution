@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     fprintf(out, "t_end,label");
     for (int c = 0; c < FW_N_CLASSES; c++) fprintf(out, ",p%d", c);
     for (int k = 0; k < FW_N_FEAT; k++) fprintf(out, ",f%d", k);
-    fprintf(out, "\n");
+    fprintf(out, ",pm_raw,pm_corr,pm5,label10\n");
     uint8_t buf[512];
     for (uint32_t s = 0; s < n; s++) {
         uint16_t nb; float r, t, rh; uint8_t step, ok;
@@ -42,7 +42,7 @@ int main(int argc, char **argv)
             fprintf(out, "%u,%d", res.t_end, (int)res.label);
             for (int c = 0; c < FW_N_CLASSES; c++) fprintf(out, ",%.7g", res.probs[c]);
             for (int k = 0; k < FW_N_FEAT; k++) fprintf(out, ",%.7g", res.feat[k]);
-            fprintf(out, "\n");
+            fprintf(out, ",%.7g,%.7g,%.7g,%d\n", res.pm_raw, res.pm_corr, res.pm5, (int)res.label10);
         }
     }
     fclose(out);

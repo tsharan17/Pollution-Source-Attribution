@@ -1,38 +1,39 @@
 [1/3] training
-  datasets: chamber 12000 windows, field 45000, validation 14300 (79 s)
-  trained in 205 s; confidence gate = 0.95
+  datasets: chamber 12000 windows, field 45000, validation 14300 (117 s)
+  trained in 357 s; confidence gate = 0.95
 [2/3] tests
-  T00 PASS Generalisation to unseen field sessions + unseen units  (11 s)
-      Chamber+field model: macro-F1 0.85, coverage 83%, selective accuracy 98%. Chamber-only model: macro-F1 0.68, selective accuracy 76%. int8 quantisation cost +0.3 pts accuracy.
-  T01 FAIL Chamber tests, single sources (in-distribution)  (6 s)
+  T00 PASS Generalisation to unseen field sessions + unseen units  (25 s)
+      Chamber+field model: macro-F1 0.86, coverage 85%, selective accuracy 99%. Chamber-only model: macro-F1 0.79, selective accuracy 86%. int8 quantisation cost -0.0 pts accuracy.
+  T01 FAIL Chamber tests, single sources (in-distribution)  (9 s)
       macro-F1 0.90, coverage 84%, selective accuracy 99% over 2201 windows on the 10 unseen pilot units.
-  T02 FAIL Detection limit (excess PM2.5 over a 30 ug/m3 background)  (6 s)
-      Smallest excess PM2.5 (ug/m3) attributed correctly >= 80 % of the time: biomass burning 50, dust 25, industrial 50, vehicle exhaust 100.
-  T03 FAIL Humidity sweep 20-97 % RH (incl. fog)  (8 s)
-      Accuracy by RH: 20% 94%, 40% 97%, 60% 95%, 75% 93%, 85% 83%, 92% 87%, 97% 76%. Drop at 85 % RH: 13 pts. Fog (RH>=92 %, no source): 0% of windows falsely blamed on a source.
-  T04 PASS Temperature sweep 5-45 C  (7 s)
-      Accuracy by temperature: 5 C 95%, 15 C 92%, 25 C 95%, 35 C 93%, 45 C 89% (spread 6 pts).
-  T05 PASS Wind speed x direction x inlet design (PolSo-19 enclosures)  (11 s)
-      Accuracy at 0.3 / 2 / 4 / 6 m/s - baseline: 93% / 96% / 91% / 88%; hooded: 94% / 93% / 94% / 88%; multi_hole: 96% / 92% / 90% / 89%. PM10 bias at 4 m/s for dust (0/90/180 deg): baseline -3%/-9%/-18%; hooded -1%/-2%/-4%; multi_hole -9%/-8%/-9%. Model trained on hooded-enclosure data only.
-  T06 PASS Mixed sources (50/50 and 75/25 pairs)  (6 s)
-      Answered labels naming a real contributor: 100%. Abstained on 40% of mixed windows. Dominant source correctly named at 75/25: 71%.
-  T07 FAIL Response time to a new source  (6 s)
-      Median 149 s, 90th percentile 230 s from source onset to first correct label (60 s window, 30 s hop, EMA smoothing); 2% never detected.
-  T08 PASS Sensor ageing / drift 0-365 days  (69 s)
-      macro-F1 with baseline tracking: day 0 0.81, day 30 0.82, day 90 0.82, day 180 0.82, day 365 0.80. With frozen factory baseline: day 0 0.83, day 30 0.82, day 90 0.80, day 180 0.74, day 365 0.63.
-  T09 PASS Unit-to-unit variation (10 pilot prototypes)  (104 s)
-      macro-F1 mean 0.88, std 0.023, worst unit 0.83, best 0.91 (same scenarios replayed on every unit).
-  T10 FAIL Unseen source subtypes and confounders  (20 s)
-      cooking: correct 0% / uncertain 16% / wrong 84%; dust_storm: correct 83% / uncertain 12% / wrong 5%; fog: correct 100% / uncertain 0% / wrong 0%; incense: correct 0% / uncertain 45% / wrong 55%; trash_burning: correct 22% / uncertain 52% / wrong 26%; two_stroke_traffic: correct 28% / uncertain 56% / wrong 16%.
-  T11 PASS 24-hour field days in six environments  (162 s)
-      All days: selective accuracy 89%, coverage 75%, macro-F1 0.77. Construction site, pre-monsoon summer: 99% @ 94%; Highway toll plaza: 45% @ 54%; Industrial estate: 100% @ 72%; Residential park, monsoon: 100% @ 89%; Rural village, crop-burning season: 100% @ 88%; Urban roadside, winter (Delhi-like): 58% @ 51%.
-  T12 FAIL Fault injection (UART, sensor death, fan stall, I2C, SD card)  (12 s)
-      none: acc 92%, flagged-after 0%, confident-after 79%; uart_bit_errors_0.1%: acc 93%, flagged-after 0%, confident-after 79%; uart_bit_errors_1%+slips: acc 100%, flagged-after 92%, confident-after 8%; pms_frames_dropped_30%: acc 100%, flagged-after 92%, confident-after 7%; pms_dead_after_1h: acc 99%, flagged-after 100%, confident-after 0%; pms_fan_stall_after_1h: acc 93%, flagged-after 0%, confident-after 100%; bme_i2c_errors_40%: acc 100%, flagged-after 96%, confident-after 4%; bme_dead_after_1h: acc 99%, flagged-after 100%, confident-after 0%; sd_write_fail_20%: acc 92%, flagged-after 0%, confident-after 79%. No crashes.
-  T13 PASS Firmware C vs Python twin (software-in-the-loop)  (4 s)
-      Labels agree on 100.00% of 537 windows (incl. a stream with UART corruption and I2C errors); max probability difference 1.1e-07; max relative feature difference 1.8e-03. Firmware state 3.1 KB RAM, model 1.8 KB flash, 1392 MACs per inference, est. ~0.18 ms per window at 170 MHz (measure with the DWT cycle counter on the board). Builds with -Wall -Wextra and no warnings.
+  T02 PASS Detection limit (excess PM2.5 over a 30 ug/m3 background)  (10 s)
+      Smallest excess PM2.5 (ug/m3) attributed correctly >= 80 % of the time: biomass burning 50, dust 25, industrial 25, vehicle exhaust 25.
+  T03 PASS Humidity sweep 20-97 % RH (incl. fog)  (15 s)
+      Accuracy by RH: 20% 95%, 40% 94%, 60% 94%, 75% 95%, 85% 95%, 92% 93%, 97% 95%. Drop at 85 % RH: -1 pts. Fog (RH>=92 %, no source): 0% of windows falsely blamed on a source.
+  T04 PASS Temperature sweep 5-45 C  (12 s)
+      Accuracy by temperature: 5 C 95%, 15 C 95%, 25 C 95%, 35 C 93%, 45 C 93% (spread 3 pts).
+  T05 PASS Wind speed x direction x inlet design (PolSo-19 enclosures)  (26 s)
+      Accuracy at 0.3 / 2 / 4 / 6 m/s - baseline: 95% / 97% / 93% / 90%; hooded: 94% / 98% / 93% / 90%; multi_hole: 96% / 95% / 92% / 90%. PM10 bias at 4 m/s for dust (0/90/180 deg): baseline -4%/-10%/-18%; hooded -1%/-3%/-6%; multi_hole -9%/-8%/-10%. Model trained on hooded-enclosure data only.
+  T06 PASS Mixed sources (50/50 and 75/25 pairs)  (10 s)
+      Answered labels naming a real contributor: 100%. Abstained on 39% of mixed windows. Dominant source correctly named at 75/25: 71%.
+  T07 FAIL Response time to a new source  (9 s)
+      Median 149 s, 90th percentile 179 s from source onset to first correct label (60 s window, 30 s hop, EMA smoothing); 0% never detected.
+  T08 PASS Sensor ageing / drift 0-365 days  (117 s)
+      macro-F1 with baseline tracking: day 0 0.81, day 30 0.81, day 90 0.81, day 180 0.81, day 365 0.80. With frozen factory baseline: day 0 0.81, day 30 0.80, day 90 0.79, day 180 0.75, day 365 0.70.
+  T09 PASS Unit-to-unit variation (10 pilot prototypes)  (114 s)
+      macro-F1 mean 0.90, std 0.016, worst unit 0.86, best 0.92 (same scenarios replayed on every unit).
+  T10 FAIL Unseen source subtypes and confounders  (10 s)
+      cooking: correct 0% / uncertain 19% / wrong 81%; dust_storm: correct 86% / uncertain 11% / wrong 3%; fog: correct 100% / uncertain 0% / wrong 0%; incense: correct 0% / uncertain 72% / wrong 28%; trash_burning: correct 24% / uncertain 55% / wrong 21%; two_stroke_traffic: correct 31% / uncertain 56% / wrong 12%.
+  T11 PASS 24-hour field days in six environments  (93 s)
+      All days: selective accuracy 97%, coverage 78%, macro-F1 0.83. Construction site, pre-monsoon summer: 100% @ 90%; Highway toll plaza: 97% @ 44%; Industrial estate: 100% @ 76%; Residential park, monsoon: 99% @ 98%; Rural village, crop-burning season: 100% @ 84%; Urban roadside, winter (Delhi-like): 85% @ 74%.
+  T12 FAIL Fault injection (UART, sensor death, fan stall, I2C, SD card)  (10 s)
+      none: acc 92%, flagged-after 0%, confident-after 80%; uart_bit_errors_0.1%: acc 94%, flagged-after 0%, confident-after 81%; uart_bit_errors_1%+slips: acc 100%, flagged-after 91%, confident-after 9%; pms_frames_dropped_30%: acc 100%, flagged-after 95%, confident-after 5%; pms_dead_after_1h: acc 98%, flagged-after 100%, confident-after 0%; pms_fan_stall_after_1h: acc 92%, flagged-after 0%, confident-after 100%; bme_i2c_errors_40%: acc 100%, flagged-after 95%, confident-after 5%; bme_dead_after_1h: acc 98%, flagged-after 100%, confident-after 0%; sd_write_fail_20%: acc 92%, flagged-after 0%, confident-after 80%. No crashes.
+  T13 PASS Firmware C vs Python twin (software-in-the-loop)  (3 s)
+      Labels agree on 100.00% of 537 windows (incl. a stream with UART corruption and I2C errors); max probability difference 1.3e-07; max relative feature difference 2.6e-03. Firmware state 3.1 KB RAM, model 1.8 KB flash, 1392 MACs per inference, est. ~0.18 ms per window at 170 MHz (measure with the DWT cycle counter on the board). Builds with -Wall -Wextra and no warnings.
   T14 FAIL Battery life (2000 mAh Li-ion) and duty cycling
-      NUCLEO board, continuous: 7.3 h (232 mA avg); Custom PCB, continuous: 11.0 h (154 mA avg); Custom PCB, PMS 90 s on / 90 s off: 18.2 h (93 mA avg); Custom PCB, PMS 90 s on / 270 s off: 27.2 h (63 mA avg). Duty cycling keeps selective accuracy at 85% (1/2 duty) and 85% (1/4 duty) but only samples 33% / 17% of the time, so short events are missed.
+      NUCLEO board, continuous: 7.3 h (232 mA avg); Custom PCB, continuous: 11.0 h (154 mA avg); Custom PCB, PMS 90 s on / 90 s off: 18.2 h (93 mA avg); Custom PCB, PMS 90 s on / 270 s off: 27.2 h (63 mA avg). Duty cycling keeps selective accuracy at 93% (1/2 duty) and 93% (1/4 duty) but only samples 33% / 17% of the time, so short events are missed.
   T15 PASS Research question: PM-only vs gas-only vs fused
-      macro-F1 (no abstention) on all held-out field windows: PM-only 0.76, gas-only 0.60, fused MLP 0.84 (+0.09), fused random forest 0.95.
+      macro-F1 (no abstention) on all held-out field windows: PM-only 0.84, gas-only 0.54, fused MLP 0.90 (+0.07), fused random forest 0.95.
 [3/3] report
-done: 9/16 PASS -> results/report.html
+done: 11/16 PASS -> results/report.html
+FINISHED

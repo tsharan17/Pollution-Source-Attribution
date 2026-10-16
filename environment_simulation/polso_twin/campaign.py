@@ -487,7 +487,8 @@ def test_sil(T, root, quick):
                     sources=[Source("coal_combustion", 90)],
                     faults=dict(pms_byte_error=5e-3, pms_byte_slip=0.02, bme_i2c_error=0.1))]
     agree, n_total, max_dp, max_df, stats = 0, 0, 0.0, 0.0, ""
-    code_map = {i: c for i, c in enumerate(P.CLASSES + [P.UNCERTAIN, P.FAULT, P.WARMUP])}
+    code_map = {i: c for i, c in enumerate(P.CLASSES + [P.UNCERTAIN, P.FAULT, P.WARMUP, P.MIXED])}
+    agree10, max_dpm = 0, 0.0
     for sc in scs:
         streams, _ = run_scenario(sc)
         if "uart_bytes" not in streams:
@@ -503,6 +504,10 @@ def test_sil(T, root, quick):
         c_lab = c["label"].map(code_map).to_numpy()
         n_total += len(c)
         agree += int((c_lab == py["label"]).sum())
+        agree10 += int((c["label10"].map(code_map).to_numpy() == py["label10"]).sum())
+        okp = np.isfinite(py["pm5"]) & (c["pm5"].to_numpy() > 0)
+        if okp.any():
+            max_dpm = max(max_dpm, float((np.abs(c["pm5"].to_numpy()[okp] - py["pm5"][okp]) / py["pm5"][okp]).max()))
         ok = py["status"] == "ok"
         if ok.any():
             max_dp = max(max_dp, float(np.abs(c[[f"p{k}" for k in range(5)]].to_numpy()[ok] - py["probs"][ok]).max()))
@@ -514,16 +519,18 @@ def test_sil(T, root, quick):
     kv = dict(x.split("=") for x in stats.split())
     state_b, w_b, macs = int(kv["sizeof(fw_state_t)"]), int(kv["model_weight_bytes"]), int(kv["macs"])
     rate = agree / n_total
+    rate10 = agree10 / n_total
     cycles = macs * 4 + 25_000                     # plain C MACs + feature maths (estimate)
     return _result("T13", "Firmware C vs Python twin (software-in-the-loop)",
                    "label agreement >= 99.5 %, max probability diff <= 0.01, RAM <= 32 KB, inference <= 10 ms",
-                   rate >= 0.995 and max_dp <= 0.01 and state_b < 32_768 and cycles / 170e6 < 0.01,
+                   rate >= 0.995 and rate10 >= 0.995 and max_dpm <= 0.01 and max_dp <= 0.01 and state_b < 32_768 and cycles / 170e6 < 0.01,
                    f"Labels agree on {rate:.2%} of {n_total} windows (incl. a stream with UART corruption and I2C errors); "
-                   f"max probability difference {max_dp:.1e}; max relative feature difference {max_df:.1e}. "
+                   f"max probability difference {max_dp:.1e}; max relative feature difference {max_df:.1e}; "
+                   f"10-min source agrees on {rate10:.2%}, 5-min PM2.5 within {max_dpm:.1e} relative. "
                    f"Firmware state {state_b / 1024:.1f} KB RAM, model {w_b / 1024:.1f} KB flash, {macs} MACs per inference, "
                    f"est. ~{cycles / 170e6 * 1e3:.2f} ms per window at 170 MHz (measure with the DWT cycle counter on the board)."
                    + (f" gcc warnings: {warnings[:200]}" if warnings else " Builds with -Wall -Wextra and no warnings."),
-                   dict(agree=rate, max_dp=max_dp, max_df=max_df, state_bytes=state_b, weight_bytes=w_b,
+                   dict(agree=rate, agree10=rate10, max_dpm=max_dpm, max_dp=max_dp, max_df=max_df, state_bytes=state_b, weight_bytes=w_b,
                         macs=macs, est_ms=cycles / 170e6 * 1e3))
 
 

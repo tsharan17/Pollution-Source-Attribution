@@ -1,0 +1,907 @@
+{
+ "sections": [
+  {
+   "id": "bom",
+   "title": "1 · Parts list",
+   "intro": "Everything the simulated device is made of. Part numbers are the ones the twin models; any equivalent works if it matches the electrical numbers.",
+   "cols": [
+    "Item",
+    "Value",
+    "Notes",
+    "Tag"
+   ],
+   "rows": [
+    [
+     "Microcontroller board",
+     "STM32 NUCLEO-G474RE",
+     "Cortex-M4F + FPU, 170 MHz, 512 KB flash, 128 KB SRAM, on-board ST-LINK-V3E",
+     "DOC"
+    ],
+    [
+     "Particle sensor",
+     "Plantower PMS7003",
+     "Laser OPC, 0.3–10 µm, 5 V fan, 3.3 V UART, 1.25 mm 10-pin connector (get the adapter board)",
+     "DOC"
+    ],
+    [
+     "Gas / T / RH / p sensor",
+     "Bosch BME688 breakout",
+     "MOX gas sensor with programmable heater, I2C, 1.71–3.6 V",
+     "DOC"
+    ],
+    [
+     "GPS",
+     "u-blox NEO-6M class module",
+     "UART 9600 baud NMEA, 3.3 V; power-save mode used for battery life",
+     "DOC"
+    ],
+    [
+     "Storage",
+     "microSD SPI breakout + card ≤ 32 GB",
+     "FAT32, 3.3 V logic (no 5 V level shifter needed on Nucleo)",
+     "DOC"
+    ],
+    [
+     "Battery",
+     "Li-ion 1S 2000 mAh, 3.7 V",
+     "Usable fraction assumed 0.85; add a protection board",
+     "SIM"
+    ],
+    [
+     "Charger",
+     "TP4056 (with protection) or equivalent",
+     "USB-C 5 V in, 1S Li-ion charge",
+     "PROP"
+    ],
+    [
+     "5 V boost",
+     "MT3608 / TPS61023 class, ≥ 300 mA",
+     "Feeds PMS7003 fan and Nucleo E5V. Efficiency modelled 0.88",
+     "PROP"
+    ],
+    [
+     "Enclosure",
+     "PolSo-19 hooded enclosure",
+     "Inlet losses from PolSo-19 Run A: fine 0.035, coarse 0.044, directional 0.39",
+     "SIM"
+    ],
+    [
+     "Misc.",
+     "Dupont wires, 2 × 10 kΩ I2C pull-ups (if breakout lacks them), N-MOSFET for GPS power gate",
+     "",
+     "PROP"
+    ]
+   ],
+   "steps": [],
+   "code": null
+  },
+  {
+   "id": "pins",
+   "title": "2 · Wiring and pin map",
+   "intro": "Proposed pins on the Nucleo Arduino / morpho headers. They avoid the ST-LINK virtual COM port (LPUART1 on PA2/PA3), the user LED (PA5) and the user button (PC13). Open STM32CubeMX with the NUCLEO-G474RE board selected and confirm each pin and alternate function before wiring.",
+   "cols": [
+    "Item",
+    "Value",
+    "Notes",
+    "Tag"
+   ],
+   "rows": [
+    [
+     "PMS7003 TX → MCU RX",
+     "PA10 (D2) · USART1_RX",
+     "9600 baud 8N1, RX by DMA circular buffer",
+     "PROP"
+    ],
+    [
+     "PMS7003 RX ← MCU TX",
+     "PA9 (D8) · USART1_TX",
+     "Only needed to send passive / sleep commands",
+     "PROP"
+    ],
+    [
+     "PMS7003 SET",
+     "PB5 (D4) · GPIO out",
+     "High = run, low = sleep (fan off)",
+     "PROP"
+    ],
+    [
+     "PMS7003 RESET",
+     "PB4 (D5) · GPIO out",
+     "Active low; keep high",
+     "PROP"
+    ],
+    [
+     "PMS7003 VCC / GND",
+     "5 V boost / GND",
+     "Fan draws ~100 mA peak; logic is 3.3 V",
+     "DOC"
+    ],
+    [
+     "BME688 SCL",
+     "PB8 (D15) · I2C1_SCL",
+     "400 kHz fast mode, 4.7–10 kΩ pull-up to 3.3 V",
+     "PROP"
+    ],
+    [
+     "BME688 SDA",
+     "PB9 (D14) · I2C1_SDA",
+     "",
+     "PROP"
+    ],
+    [
+     "BME688 SDO",
+     "GND → address 0x76 (or 3.3 V → 0x77)",
+     "Chip ID register 0xD0 must read 0x61",
+     "DOC"
+    ],
+    [
+     "BME688 VCC",
+     "3.3 V",
+     "",
+     "DOC"
+    ],
+    [
+     "GPS TX → MCU RX",
+     "PC11 (CN7) · USART3_RX",
+     "9600 baud NMEA, DMA circular",
+     "PROP"
+    ],
+    [
+     "GPS RX ← MCU TX",
+     "PC10 (CN7) · USART3_TX",
+     "UBX commands for power-save mode",
+     "PROP"
+    ],
+    [
+     "GPS power gate",
+     "PB0 (A3) · GPIO → N-MOSFET",
+     "Optional: switch the module off between fixes",
+     "PROP"
+    ],
+    [
+     "microSD SCK / MISO / MOSI",
+     "PB13 / PB14 / PB15 · SPI2",
+     "10 MHz after init (400 kHz during card init)",
+     "PROP"
+    ],
+    [
+     "microSD CS",
+     "PB12 · GPIO out",
+     "",
+     "PROP"
+    ],
+    [
+     "Battery sense",
+     "PA0 (A0) · ADC1_IN1 via 100k/100k divider",
+     "Optional battery % on the log",
+     "PROP"
+    ],
+    [
+     "Debug / log",
+     "LPUART1 PA2 / PA3 → ST-LINK VCP",
+     "115200 baud to PC over the USB cable",
+     "DOC"
+    ],
+    [
+     "Status LED",
+     "PA5 (LD2)",
+     "Blink pattern = state (warm-up / ok / fault)",
+     "DOC"
+    ]
+   ],
+   "steps": [],
+   "code": null
+  },
+  {
+   "id": "mcu",
+   "title": "3 · Microcontroller configuration",
+   "intro": "Settings to enter in STM32CubeMX (or set in code). The cycle and power numbers in the STM32 tab assume exactly this configuration.",
+   "cols": [
+    "Item",
+    "Value",
+    "Notes",
+    "Tag"
+   ],
+   "rows": [
+    [
+     "System clock",
+     "170 MHz",
+     "HSI16 → PLL: M = /4, N = ×85, R = /2 → 170 MHz SYSCLK; AHB/APB1/APB2 = /1",
+     "PROP"
+    ],
+    [
+     "Voltage scaling",
+     "Range 1 boost mode",
+     "Required above 150 MHz",
+     "DOC"
+    ],
+    [
+     "Flash latency",
+     "4 wait states (check RM0440 table)",
+     "ART accelerator + prefetch ON. The twin's cost model allows 1.0–1.25× cycle inflation from flash; the twin keeps a conservative 8 WS figure",
+     "PROP"
+    ],
+    [
+     "Low-speed clock",
+     "LSE 32.768 kHz (X2 on Nucleo)",
+     "Drives RTC and LPTIM1 so timing survives Stop mode",
+     "PROP"
+    ],
+    [
+     "Wake-up timer",
+     "LPTIM1, 1 Hz",
+     "One wake per second: read the PMS frame, run a BME688 heater step, update the window",
+     "SIM"
+    ],
+    [
+     "USART1 (PMS7003)",
+     "9600 8N1, RX DMA circular 64 B",
+     "Parse 32-byte frames in the half/full-transfer callbacks",
+     "PROP"
+    ],
+    [
+     "USART3 (GPS)",
+     "9600 8N1, RX DMA circular 256 B",
+     "",
+     "PROP"
+    ],
+    [
+     "I2C1 (BME688)",
+     "400 kHz, 7-bit address 0x76",
+     "Polling is fine (≈ 30 bytes per second)",
+     "PROP"
+    ],
+    [
+     "SPI2 (microSD)",
+     "Mode 0, 8-bit, TX DMA",
+     "Write one CSV line per 30 s window; batch to 512-byte sectors",
+     "PROP"
+    ],
+    [
+     "NVIC priorities",
+     "DMA/USART 5, LPTIM1 6, SysTick off in Stop",
+     "Keep the wake-up interrupt below the UART DMA",
+     "PROP"
+    ],
+    [
+     "Low-power mode",
+     "Stop 1 between wakes (optimised firmware A4)",
+     "Run 18.0 mA / Sleep 8.0 mA / Stop 0.06 mA nominal at 3.3 V",
+     "EST"
+    ],
+    [
+     "FPU",
+     "Enabled, hard-float ABI (-mfloat-abi=hard -mfpu=fpv4-sp-d16)",
+     "",
+     "DOC"
+    ],
+    [
+     "Compiler flags",
+     "-O2 -mcpu=cortex-m4 -mthumb -ffunction-sections -fdata-sections",
+     "Plus -DFW_OPT_LOGCACHE (proved identical answers in the SIL test)",
+     "PROP"
+    ]
+   ],
+   "steps": [],
+   "code": null
+  },
+  {
+   "id": "sensors",
+   "title": "4 · Sensor settings",
+   "intro": "How each sensor is driven. These are the settings the sensor models assume.",
+   "cols": [
+    "Item",
+    "Value",
+    "Notes",
+    "Tag"
+   ],
+   "rows": [
+    [
+     "PMS7003 mode",
+     "Active (continuous) mode",
+     "Firmware keeps the newest valid frame each second; one frame = 32 bytes, header 0x42 0x4D, checksum = sum of bytes 0–29",
+     "SIM"
+    ],
+    [
+     "PMS7003 start-up",
+     "discard first 30 s after fan start",
+     "Datasheet: data stable 30 s after wake",
+     "DOC"
+    ],
+    [
+     "PMS7003 channels used",
+     "6 counts (>0.3 … >10 µm per 0.1 L) + PM1/PM2.5/PM10 CF=1",
+     "uint16 fields, big-endian",
+     "DOC"
+    ],
+    [
+     "PMS7003 command: passive",
+     "42 4D E1 00 00 01 70",
+     "",
+     "DOC"
+    ],
+    [
+     "PMS7003 command: active",
+     "42 4D E1 00 01 01 71",
+     "",
+     "DOC"
+    ],
+    [
+     "PMS7003 command: sleep / wake",
+     "42 4D E4 00 00 01 73 / 42 4D E4 00 01 01 74",
+     "Or use the SET pin",
+     "DOC"
+    ],
+    [
+     "BME688 mode",
+     "Forced mode, one heater step per second",
+     "Read T, RH, p and gas resistance after each step; check gas_valid and heat_stab bits",
+     "SIM"
+    ],
+    [
+     "BME688 heater profile",
+     "150 → 200 → 250 → 300 → 350 → 400 → 350 → 300 → 250 → 200 °C",
+     "10 steps, repeats every 10 s; set target and ~100 ms heat time per step",
+     "SIM"
+    ],
+    [
+     "BME688 oversampling",
+     "T ×2, p ×1 (unused), RH ×1, IIR filter off",
+     "Use the Bosch BME68x driver for heater-resistance conversion",
+     "PROP"
+    ],
+    [
+     "BME688 self-heating",
+     "+1.5 °C (unit spread 0.3 °C)",
+     "Modelled warming of T/RH reading inside the enclosure — measure against a reference thermometer",
+     "EST"
+    ],
+    [
+     "GPS",
+     "NMEA GGA/RMC only, power-save mode",
+     "Position and UTC time for the log; not used by the classifier",
+     "PROP"
+    ],
+    [
+     "microSD log line",
+     "one per 30 s window",
+     "time, lat, lon, label, label10, confidence, pm_raw, pm_corr, pm5, pm5_lo, pm5_hi, T, RH, fault flags, battery",
+     "PROP"
+    ]
+   ],
+   "steps": [],
+   "code": null
+  },
+  {
+   "id": "fw",
+   "title": "5 · Firmware constants",
+   "intro": "Values in the C firmware (firmware_c/polso_fw.h, polso_fw.c) that produced every result in this simulation. Change them only together with a re-run of the twin.",
+   "cols": [
+    "Item",
+    "Value",
+    "Notes",
+    "Tag"
+   ],
+   "rows": [
+    [
+     "Window length",
+     "60 s",
+     "Features are computed over the last 60 one-second samples",
+     "SIM"
+    ],
+    [
+     "Hop",
+     "30 s",
+     "One answer every 30 s",
+     "SIM"
+    ],
+    [
+     "Warm-up",
+     "300 s",
+     "Device reports 'warming up' until the MOX baseline settles",
+     "SIM"
+    ],
+    [
+     "PM data needed",
+     "80% of window",
+     "Else the window is a sensor fault",
+     "SIM"
+    ],
+    [
+     "Gas data needed",
+     "70% of window",
+     "",
+     "SIM"
+    ],
+    [
+     "Baseline tracker up",
+     "0.0005 per sample",
+     "Rise toward cleaner air (time constant ≈ 5.6 h)",
+     "SIM"
+    ],
+    [
+     "Baseline tracker down",
+     "1e-06 ln units per sample",
+     "Slow fall (≈ 0.009 per day)",
+     "SIM"
+    ],
+    [
+     "Probability smoothing",
+     "EMA 0.5",
+     "Between consecutive windows",
+     "SIM"
+    ],
+    [
+     "Confidence gate",
+     "0.95",
+     "Below this the device says 'uncertain' instead of guessing",
+     "SIM"
+    ],
+    [
+     "5-min PM2.5 average",
+     "last 10 windows",
+     "Mean of corrected PM2.5 with a 16–84 % band",
+     "SIM"
+    ],
+    [
+     "10-min source",
+     "last 20 windows",
+     "Majority label; needs ≥ 6 answers and ≥ 50 %, else 'mixed'",
+     "SIM"
+    ],
+    [
+     "Sample rate",
+     "1 Hz",
+     "PMS frame + one BME688 heater step per second",
+     "SIM"
+    ]
+   ],
+   "steps": [],
+   "code": null
+  },
+  {
+   "id": "model",
+   "title": "6 · Classifier",
+   "intro": "Int8 neural network 25-32-16-5, trained in polso_twin/model.py and exported to firmware_c/model_params.h. 1392 multiply-accumulates per answer, ≈ 1.8 KB of weights and scales. Outputs: vehicle_exhaust, biomass_burning, dust, industrial, background.",
+   "cols": [
+    "#",
+    "Feature",
+    "How it is computed",
+    "Tag"
+   ],
+   "rows": [
+    [
+     "0",
+     "lfrac_0.3-0.5",
+     "Share of counts in each PMS size bin, log10 (0.3–0.5 … >10 µm)",
+     "SIM"
+    ],
+    [
+     "1",
+     "lfrac_0.5-1",
+     "Share of counts in each PMS size bin, log10 (0.3–0.5 … >10 µm)",
+     "SIM"
+    ],
+    [
+     "2",
+     "lfrac_1-2.5",
+     "Share of counts in each PMS size bin, log10 (0.3–0.5 … >10 µm)",
+     "SIM"
+    ],
+    [
+     "3",
+     "lfrac_2.5-5",
+     "Share of counts in each PMS size bin, log10 (0.3–0.5 … >10 µm)",
+     "SIM"
+    ],
+    [
+     "4",
+     "lfrac_5-10",
+     "Share of counts in each PMS size bin, log10 (0.3–0.5 … >10 µm)",
+     "SIM"
+    ],
+    [
+     "5",
+     "lfrac_>10",
+     "Share of counts in each PMS size bin, log10 (0.3–0.5 … >10 µm)",
+     "SIM"
+    ],
+    [
+     "6",
+     "log_count",
+     "log10(1 + count >0.3 µm)",
+     "SIM"
+    ],
+    [
+     "7",
+     "pm25/pm10",
+     "PM2.5 / PM10",
+     "SIM"
+    ],
+    [
+     "8",
+     "pm1/pm25",
+     "PM1 / PM2.5",
+     "SIM"
+    ],
+    [
+     "9",
+     "cv_count",
+     "Count variability (sd / mean)",
+     "SIM"
+    ],
+    [
+     "10",
+     "skew_count",
+     "Count skewness (spikes)",
+     "SIM"
+    ],
+    [
+     "11",
+     "max_rise",
+     "Fastest 5-s rise in log count",
+     "SIM"
+    ],
+    [
+     "12",
+     "gas_resp",
+     "Mean gas response (baseline-corrected ln R)",
+     "SIM"
+    ],
+    [
+     "13",
+     "gas_shape_150C",
+     "Gas response at 150 °C minus mean",
+     "SIM"
+    ],
+    [
+     "14",
+     "gas_shape_200C",
+     "Gas response at 200 °C minus mean",
+     "SIM"
+    ],
+    [
+     "15",
+     "gas_shape_250C",
+     "Gas response at 250 °C minus mean",
+     "SIM"
+    ],
+    [
+     "16",
+     "gas_shape_300C",
+     "Gas response at 300 °C minus mean",
+     "SIM"
+    ],
+    [
+     "17",
+     "gas_shape_350C",
+     "Gas response at 350 °C minus mean",
+     "SIM"
+    ],
+    [
+     "18",
+     "gas_shape_400C",
+     "Gas response at 400 °C minus mean",
+     "SIM"
+    ],
+    [
+     "19",
+     "gas_slope_300C",
+     "Gas trend at 300 °C over the window",
+     "SIM"
+    ],
+    [
+     "20",
+     "gas_slope_200C",
+     "Gas trend at 200 °C over the window",
+     "SIM"
+    ],
+    [
+     "21",
+     "pm_gas_corr",
+     "Correlation of particles and gas at 300 °C",
+     "SIM"
+    ],
+    [
+     "22",
+     "gas_per_pm",
+     "Gas response per unit PM2.5",
+     "SIM"
+    ],
+    [
+     "23",
+     "rh",
+     "Relative humidity / 100",
+     "SIM"
+    ],
+    [
+     "24",
+     "temp",
+     "Temperature / 50 °C",
+     "SIM"
+    ]
+   ],
+   "steps": [],
+   "code": null
+  },
+  {
+   "id": "pmcal",
+   "title": "7 · PM2.5 correction",
+   "intro": "PM_corrected = exp(β) · PM_raw^α / (1 + κ · h), with h = a / (1 − a), a = min(RH, 95) / 100, chosen per detected source. Values are in firmware_c/pm_cal_params.h. They come from simulated co-location; replace them with a real co-location against a reference monitor (step 10).",
+   "cols": [
+    "Source",
+    "Coefficients",
+    "Uncertainty band",
+    "Tag"
+   ],
+   "rows": [
+    [
+     "vehicle exhaust",
+     "α 0.893 · β 1.507 · κ 0.049",
+     "[-0.74, +0.79] ln units (×1.55 widened), fit on 2755 windows",
+     "SIM"
+    ],
+    [
+     "biomass burning",
+     "α 0.861 · β 0.845 · κ 0.123",
+     "[-0.44, +0.49] ln units (×1.55 widened), fit on 2049 windows",
+     "SIM"
+    ],
+    [
+     "dust",
+     "α 1.014 · β -0.105 · κ 0.089",
+     "[-0.18, +0.27] ln units (×1.55 widened), fit on 2213 windows",
+     "SIM"
+    ],
+    [
+     "industrial",
+     "α 0.881 · β -0.047 · κ 0.081",
+     "[-0.34, +0.35] ln units (×1.55 widened), fit on 3947 windows",
+     "SIM"
+    ],
+    [
+     "background",
+     "α 0.974 · β 0.025 · κ 0.212",
+     "[-0.30, +0.22] ln units (×1.55 widened), fit on 27145 windows",
+     "SIM"
+    ],
+    [
+     "unknown",
+     "α 0.913 · β 0.303 · κ 0.137",
+     "[-0.35, +0.42] ln units (×1.55 widened), fit on 6891 windows",
+     "SIM"
+    ]
+   ],
+   "steps": [],
+   "code": null
+  },
+  {
+   "id": "power",
+   "title": "8 · Power budget inputs",
+   "intro": "Datasheet typicals the battery-life numbers use. The memory map and the full current budget per design lever are shown live below from the STM32 run.",
+   "cols": [
+    "Item",
+    "Value",
+    "Notes",
+    "Tag"
+   ],
+   "rows": [
+    [
+     "PMS7003 active / sleep",
+     "80 / 0.2 mA at 5 V",
+     "",
+     "DOC"
+    ],
+    [
+     "BME688 (heater duty)",
+     "9.0 mA average",
+     "≈ 75 % heater duty at 12 mA",
+     "EST"
+    ],
+    [
+     "MCU run / sleep / stop",
+     "(14.0, 18.0, 30.0) / (5.0, 8.0, 14.0) / (0.02, 0.06, 0.15) mA",
+     "low / nominal / high at 3.3 V — measure on IDD jumper JP6",
+     "EST"
+    ],
+    [
+     "Nucleo overhead",
+     "45.0 mA",
+     "ST-LINK + LEDs; cut it off (or use a bare G474 board) for long runs",
+     "EST"
+    ],
+    [
+     "GPS track / power-save",
+     "45.0 / 12.0 mA",
+     "",
+     "DOC"
+    ],
+    [
+     "microSD write",
+     "60.0 mA for 20 ms, 2× per min",
+     "",
+     "EST"
+    ],
+    [
+     "Battery",
+     "2000 mAh × 0.85 usable",
+     "boost 0.88, 3.3 V LDO 0.89",
+     "SIM"
+    ]
+   ],
+   "steps": [],
+   "code": null
+  },
+  {
+   "id": "assume",
+   "title": "9 · Simulation assumptions to check first",
+   "intro": "The twin depends on these modelled numbers. Each has a simple bench test. If a measurement falls outside the stated value, re-run the twin with the measured value before trusting the accuracy figures.",
+   "cols": [
+    "Assumption",
+    "Value used",
+    "How to measure",
+    "Tag"
+   ],
+   "rows": [
+    [
+     "PMS sample heating",
+     "+5.0 °C",
+     "Laser and fan warm the sampled air, lowering its RH. Measure: PMS vs reference PM2.5 at RH > 80 %",
+     "EST"
+    ],
+    [
+     "PMS RH cap",
+     "95.0 %",
+     "Fog/droplet regime not modelled — expect larger errors in fog",
+     "EST"
+    ],
+    [
+     "PMS unit gain spread",
+     "σ 0.1",
+     "Co-locate every unit for one day",
+     "EST"
+    ],
+    [
+     "PMS fouling",
+     "0.0003 per day",
+     "Re-check monthly against the reference",
+     "EST"
+    ],
+    [
+     "MOX baseline drift",
+     "0.002 ln/day + random walk 0.01/√day",
+     "Log clean-air resistance for 2 weeks",
+     "EST"
+    ],
+    [
+     "MOX unit spread",
+     "R_ref σ 0.35, sensitivity σ 0.15",
+     "Compare units side by side in clean air",
+     "EST"
+    ],
+    [
+     "MOX noise",
+     "0.01 ln R per reading",
+     "Standard deviation of ln R in steady clean air",
+     "EST"
+    ],
+    [
+     "Enclosure losses",
+     "PolSo-19 Run A numbers (hooded)",
+     "Repeat with the printed enclosure next to an open sensor",
+     "EST"
+    ]
+   ],
+   "steps": [],
+   "code": null
+  },
+  {
+   "id": "steps",
+   "title": "10 · Build, flash and verify — step by step",
+   "intro": "From parts on the desk to a device whose answers can be compared with the simulation.",
+   "cols": [
+    "Item",
+    "Value",
+    "Notes",
+    "Tag"
+   ],
+   "rows": [],
+   "steps": [
+    "Install STM32CubeIDE (includes CubeMX and the GCC toolchain).",
+    "New project → Board Selector → NUCLEO-G474RE. Apply the clock and peripheral settings from section 3 and the pins from section 2.",
+    "Copy firmware_c/polso_fw.c, polso_fw.h, pms7003.c, pms7003.h, model_params.h, pm_cal_params.h (and fastmath.h) into Core/Src and Core/Inc.",
+    "In main.c: start USART1/USART3 DMA reception, init the BME688 (Bosch BME68x driver) with the heater profile, call fw_init(&state, b0) where b0[10] is the clean-air ln(gas resistance) per heater step (measure it once outdoors in clean air and store it in flash), start LPTIM1 at 1 Hz.",
+    "On each LPTIM1 wake: pass the UART DMA bytes to fw_uart_rx(), read the BME688 step, call fw_tick(); every 30 s it fills fw_result_t — write it to the SD card and LPUART1.",
+    "Bench test 1 — parser and maths: run firmware_c/sil.exe on a recorded stream on the PC and on the board (feed the same bytes over the VCP); outputs must match line for line.",
+    "Bench test 2 — timing: build firmware_c/bench/dwt_bench.c, read the DWT cycle counter, and enter the numbers in stm32_twin/compare_measured.py (see stm32_twin/MEASURE_ON_BOARD.md).",
+    "Bench test 3 — current: remove JP6, put a multimeter / power profiler in series, compare with the STM32 tab's budget.",
+    "Co-location: place the device next to a reference PM2.5 monitor (BAM / TEOM or a calibrated optical monitor) for ≥ 7 days. Log both.",
+    "Fit the PM2.5 correction with polso_twin/pmcal.py on the co-location data, export pm_cal_params.h, re-flash.",
+    "Source labels: keep a diary of known events (traffic peak, a nearby fire, dust) and compare with label10; verify/ scripts compute the agreement.",
+    "Compare everything with the simulation: python run_verification.py — any number outside the twin's band is a model error to fix before trusting the map."
+   ],
+   "code": null
+  },
+  {
+   "id": "files",
+   "title": "11 · Where everything lives in the repo",
+   "intro": "Run commands from environment_simulation/.",
+   "cols": [
+    "Item",
+    "Value",
+    "Notes",
+    "Tag"
+   ],
+   "rows": [
+    [
+     "Sensor and air models",
+     "polso_twin/params.py, physics.py, sensors.py, environment.py",
+     "All modelled numbers in one place (params.py)",
+     "SIM"
+    ],
+    [
+     "Firmware twin (Python)",
+     "polso_twin/firmware.py",
+     "Mirrors the C code; used for training and tests",
+     "SIM"
+    ],
+    [
+     "Firmware (C, runs on the board)",
+     "firmware_c/polso_fw.c/.h, pms7003.c/.h",
+     "Portable C99, no HAL calls",
+     "SIM"
+    ],
+    [
+     "Model weights",
+     "firmware_c/model_params.h",
+     "Auto-generated: python run_all.py",
+     "SIM"
+    ],
+    [
+     "PM2.5 correction",
+     "firmware_c/pm_cal_params.h, results/pm_cal.json",
+     "polso_twin/pmcal.py",
+     "SIM"
+    ],
+    [
+     "STM32 timing / power model",
+     "stm32_twin/",
+     "python run_mcu.py",
+     "EST"
+    ],
+    [
+     "Area map simulation",
+     "polso_twin/area.py",
+     "python run_area.py",
+     "SIM"
+    ],
+    [
+     "Viewer",
+     "viewer/area_viewer_template.html → results/area_viewer.html",
+     "python viewer/build_viewer.py",
+     "SIM"
+    ],
+    [
+     "This build sheet",
+     "build_spec.py → results/build_params.json, BUILD_GUIDE.md",
+     "python build_spec.py",
+     "SIM"
+    ],
+    [
+     "Tests",
+     "tests/",
+     "python -m unittest discover tests",
+     "SIM"
+    ]
+   ],
+   "steps": [],
+   "code": null
+  }
+ ],
+ "tags": {
+  "DOC": "datasheet / reference manual",
+  "SIM": "value the simulation and firmware use",
+  "EST": "estimate — measure it",
+  "PROP": "proposed — verify in CubeMX before wiring"
+ }
+}

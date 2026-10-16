@@ -1,0 +1,31 @@
+{
+ "candidates": {
+  "raw sensor": {
+   "median": 0.4156896617138469,
+   "p90": 0.805227682785041,
+   "coverage": 0.0
+  },
+  "A field fit, re-centred on field data": {
+   "median": 0.22863635065671928,
+   "p90": 0.47626784519642285,
+   "coverage": 0.48543859649122806
+  },
+  "B chamber fit, bands from field data": {
+   "median": 0.2644714229328971,
+   "p90": 0.5342536374662742,
+   "coverage": 0.4982456140350877
+  },
+  "C chamber fit, re-centred on field data": {
+   "median": 0.2669123422510873,
+   "p90": 0.5252018539565105,
+   "coverage": 0.4982456140350877
+  }
+ },
+ "picked": "A field fit, re-centred on field data",
+ "band_scale": 1.54901123046875,
+ "decision_after_widening": {
+  "median": 0.22863635065671928,
+  "p90": 0.47626784519642285,
+  "coverage": 0.6801754385964912
+ }
+}

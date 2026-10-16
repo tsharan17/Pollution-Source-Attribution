@@ -1,0 +1,3 @@
+96 device-runs, 6 cases in 224 s -> results/area_sim.json
+wrote C:\MY PROJECTS\Pollution Source Attribution\Pollution Source Attribution\environment_simulation\results\area_viewer.html (6.0 MB)
+AREA_DONE

@@ -13,8 +13,12 @@
 
 typedef enum {
     FW_LBL_VEHICLE = 0, FW_LBL_BIOMASS, FW_LBL_DUST, FW_LBL_INDUSTRIAL, FW_LBL_BACKGROUND,
-    FW_LBL_UNCERTAIN, FW_LBL_FAULT, FW_LBL_WARMUP
+    FW_LBL_UNCERTAIN, FW_LBL_FAULT, FW_LBL_WARMUP, FW_LBL_MIXED
 } fw_label_t;
+
+#define REP_PM_N 10          /* 5-minute PM2.5 average (windows) */
+#define REP_LAB_N 20         /* 10-minute dominant source (windows) */
+#define REP_MIN_ANSWERS 6
 
 typedef struct {
     /* 1 Hz ring buffers, slot = second % FW_WINDOW_S */
@@ -29,6 +33,19 @@ typedef struct {
     float base[FW_N_STEPS];          /* clean-air ln R per heater step */
     float probs_prev[FW_N_CLASSES];
     uint8_t prev_ok;
+    float ah_cache;                  /* absolute humidity used by the gas compensation */
+#ifdef FW_OPT_AH_DECIMATE
+    float t_acc, rh_acc;             /* 10-sample accumulators for the humidity term */
+    uint8_t n_acc, ah_set;
+#endif
+#ifdef FW_OPT_LOGCACHE
+    float lc0[FW_WINDOW_S];          /* log10(1 + count>0.3um) per second */
+#endif
+    /* reporting layer history */
+    float rep_pm[REP_PM_N], rep_lo[REP_PM_N], rep_hi[REP_PM_N];
+    uint8_t rep_pm_ok[REP_PM_N];
+    uint8_t rep_lab[REP_LAB_N];
+    uint32_t rep_n;
     uint32_t sec;                    /* index of the next sample since power-on */
     pms_parser_t pms;
     pms_frame_t last_frame;
@@ -41,6 +58,10 @@ typedef struct {
     float feat[FW_N_FEAT];
     float probs[FW_N_CLASSES];
     float probs_raw[FW_N_CLASSES];
+    float pm_raw;                    /* window mean PM2.5 (CF=1) from the PMS7003 */
+    float pm_corr, pm_lo, pm_hi;     /* corrected PM2.5 and its 16-84 % band */
+    float pm5, pm5_lo, pm5_hi;       /* 5-minute average of the corrected value */
+    fw_label_t label10;              /* 10-minute dominant source */
 } fw_result_t;
 
 void fw_init(fw_state_t *s, const float b0[FW_N_STEPS]);

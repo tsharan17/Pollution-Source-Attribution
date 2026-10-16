@@ -1,7 +1,7 @@
 {
  "meta": {
-  "date": "2026-10-11",
-  "runtime": "11 min",
+  "date": "2026-10-14",
+  "runtime": "14 min",
   "sim_hours": "1,478",
   "conf_thr": 0.95,
   "weights_bytes": 1804,
@@ -17,25 +17,25 @@
    "name": "Generalisation to unseen field sessions + unseen units",
    "criterion": "chamber+field model macro-F1 >= 0.85 on held-out field data",
    "verdict": "PASS",
-   "summary": "Chamber+field model: macro-F1 0.85, coverage 83%, selective accuracy 98%. Chamber-only model: macro-F1 0.68, selective accuracy 76%. int8 quantisation cost +0.3 pts accuracy.",
+   "summary": "Chamber+field model: macro-F1 0.86, coverage 85%, selective accuracy 99%. Chamber-only model: macro-F1 0.79, selective accuracy 86%. int8 quantisation cost -0.0 pts accuracy.",
    "data": {
     "B": {
      "n": 9783,
-     "coverage": 0.8293979351937034,
-     "sel_acc": 0.9844712842001478,
-     "acc": 0.8165184503730962,
-     "macro_f1": 0.8515011712174783,
-     "conf_wrong": 0.012879484820607176
+     "coverage": 0.8497393437595829,
+     "sel_acc": 0.9926620955130518,
+     "acc": 0.8435040376162731,
+     "macro_f1": 0.8624115563998653,
+     "conf_wrong": 0.0062353061433098236
     },
     "A": {
      "n": 9783,
-     "coverage": 0.8385975672084228,
-     "sel_acc": 0.7567040468064359,
-     "acc": 0.6345701727486456,
-     "macro_f1": 0.6797776947312235,
-     "conf_wrong": 0.20402739445977716
+     "coverage": 0.8934887048962485,
+     "sel_acc": 0.8569957670747054,
+     "acc": 0.7657160380251457,
+     "macro_f1": 0.7875646930517382,
+     "conf_wrong": 0.12777266687110295
     },
-    "quant_loss": 0.0028621077379127335
+    "quant_loss": -0.0004088725339874699
    }
   },
   "T01": {
@@ -47,11 +47,11 @@
    "data": {
     "m": {
      "n": 2201,
-     "coverage": 0.8355293048614266,
-     "sel_acc": 0.9864056552474171,
-     "acc": 0.8241708314402544,
-     "macro_f1": 0.8968736998796144,
-     "conf_wrong": 0.011358473421172195
+     "coverage": 0.8409813721035893,
+     "sel_acc": 0.9854132901134521,
+     "acc": 0.8287142208087233,
+     "macro_f1": 0.8967473495531554,
+     "conf_wrong": 0.01226715129486597
     }
    }
   },
@@ -59,14 +59,14 @@
    "id": "T02",
    "name": "Detection limit (excess PM2.5 over a 30 ug/m3 background)",
    "criterion": ">= 80 % correct attribution at <= 50 ug/m3 excess for every class",
-   "verdict": "FAIL",
-   "summary": "Smallest excess PM2.5 (ug/m3) attributed correctly >= 80 % of the time: biomass burning 50, dust 25, industrial 50, vehicle exhaust 100.",
+   "verdict": "PASS",
+   "summary": "Smallest excess PM2.5 (ug/m3) attributed correctly >= 80 % of the time: biomass burning 50, dust 25, industrial 25, vehicle exhaust 25.",
    "data": {
     "limits": {
      "biomass_burning": 50,
      "dust": 25,
-     "industrial": 50,
-     "vehicle_exhaust": 100
+     "industrial": 25,
+     "vehicle_exhaust": 25
     }
    }
   },
@@ -74,65 +74,65 @@
    "id": "T03",
    "name": "Humidity sweep 20-97 % RH (incl. fog)",
    "criterion": "accuracy drop at 85 % RH <= 10 pts vs 40-60 % RH; false source alarms in fog <= 10 %",
-   "verdict": "FAIL",
-   "summary": "Accuracy by RH: 20% 94%, 40% 97%, 60% 95%, 75% 93%, 85% 83%, 92% 87%, 97% 76%. Drop at 85 % RH: 13 pts. Fog (RH>=92 %, no source): 0% of windows falsely blamed on a source.",
+   "verdict": "PASS",
+   "summary": "Accuracy by RH: 20% 95%, 40% 94%, 60% 94%, 75% 95%, 85% 95%, 92% 93%, 97% 95%. Drop at 85 % RH: -1 pts. Fog (RH>=92 %, no source): 0% of windows falsely blamed on a source.",
    "data": {
     "table": {
      "20": {
       "n": 591,
-      "coverage": 0.9424703891708968,
+      "coverage": 0.949238578680203,
       "sel_acc": 1.0,
-      "acc": 0.9424703891708968,
-      "macro_f1": 0.963505780362883,
+      "acc": 0.949238578680203,
+      "macro_f1": 0.9658046309375958,
       "conf_wrong": 0.0
      },
      "40": {
       "n": 592,
-      "coverage": 0.9679054054054054,
-      "sel_acc": 0.9982547993019197,
-      "acc": 0.9662162162162162,
-      "macro_f1": 0.9742102109547718,
-      "conf_wrong": 0.0016891891891891893
+      "coverage": 0.9425675675675675,
+      "sel_acc": 1.0,
+      "acc": 0.9425675675675675,
+      "macro_f1": 0.9572446164614814,
+      "conf_wrong": 0.0
      },
      "60": {
       "n": 597,
-      "coverage": 0.949748743718593,
+      "coverage": 0.9396984924623115,
       "sel_acc": 1.0,
-      "acc": 0.949748743718593,
-      "macro_f1": 0.967346488482922,
+      "acc": 0.9396984924623115,
+      "macro_f1": 0.9608035595030208,
       "conf_wrong": 0.0
      },
      "75": {
       "n": 592,
-      "coverage": 0.9341216216216216,
-      "sel_acc": 0.9981916817359855,
-      "acc": 0.9324324324324325,
-      "macro_f1": 0.9553389999778069,
+      "coverage": 0.956081081081081,
+      "sel_acc": 0.9982332155477032,
+      "acc": 0.9543918918918919,
+      "macro_f1": 0.9653048780487804,
       "conf_wrong": 0.0016891891891891893
      },
      "85": {
       "n": 595,
-      "coverage": 0.8336134453781513,
-      "sel_acc": 0.9919354838709677,
-      "acc": 0.826890756302521,
-      "macro_f1": 0.8919498148739813,
-      "conf_wrong": 0.0067226890756302525
+      "coverage": 0.9529411764705882,
+      "sel_acc": 1.0,
+      "acc": 0.9529411764705882,
+      "macro_f1": 0.9698772951186744,
+      "conf_wrong": 0.0
      },
      "92": {
       "n": 595,
-      "coverage": 0.8739495798319328,
+      "coverage": 0.9260504201680673,
       "sel_acc": 1.0,
-      "acc": 0.8739495798319328,
-      "macro_f1": 0.923723233086157,
+      "acc": 0.9260504201680673,
+      "macro_f1": 0.9537725603024478,
       "conf_wrong": 0.0
      },
      "97": {
       "n": 591,
-      "coverage": 0.7732656514382402,
-      "sel_acc": 0.9781181619256017,
-      "acc": 0.7563451776649747,
-      "macro_f1": 0.8249705451743544,
-      "conf_wrong": 0.01692047377326565
+      "coverage": 0.9458544839255499,
+      "sel_acc": 1.0,
+      "acc": 0.9458544839255499,
+      "macro_f1": 0.9601955034213099,
+      "conf_wrong": 0.0
      }
     },
     "fog_false": 0.0
@@ -143,48 +143,48 @@
    "name": "Temperature sweep 5-45 C",
    "criterion": "accuracy spread across temperatures <= 10 pts",
    "verdict": "PASS",
-   "summary": "Accuracy by temperature: 5 C 95%, 15 C 92%, 25 C 95%, 35 C 93%, 45 C 89% (spread 6 pts).",
+   "summary": "Accuracy by temperature: 5 C 95%, 15 C 95%, 25 C 95%, 35 C 93%, 45 C 93% (spread 3 pts).",
    "data": {
     "table": {
      "5": {
       "n": 598,
-      "coverage": 0.9464882943143813,
+      "coverage": 0.9531772575250836,
       "sel_acc": 1.0,
-      "acc": 0.9464882943143813,
-      "macro_f1": 0.9761711934645882,
+      "acc": 0.9531772575250836,
+      "macro_f1": 0.9786773500819729,
       "conf_wrong": 0.0
      },
      "15": {
       "n": 595,
-      "coverage": 0.9193277310924369,
+      "coverage": 0.9478991596638655,
       "sel_acc": 1.0,
-      "acc": 0.9193277310924369,
-      "macro_f1": 0.9523205158084928,
+      "acc": 0.9478991596638655,
+      "macro_f1": 0.9628156062813662,
       "conf_wrong": 0.0
      },
      "25": {
       "n": 596,
-      "coverage": 0.9513422818791947,
+      "coverage": 0.9496644295302014,
       "sel_acc": 1.0,
-      "acc": 0.9513422818791947,
-      "macro_f1": 0.9723591484713486,
+      "acc": 0.9496644295302014,
+      "macro_f1": 0.9686349613644853,
       "conf_wrong": 0.0
      },
      "35": {
       "n": 593,
-      "coverage": 0.9342327150084317,
+      "coverage": 0.927487352445194,
       "sel_acc": 1.0,
-      "acc": 0.9342327150084317,
-      "macro_f1": 0.9586504234069849,
+      "acc": 0.927487352445194,
+      "macro_f1": 0.9508836641394781,
       "conf_wrong": 0.0
      },
      "45": {
       "n": 591,
-      "coverage": 0.8866328257191202,
-      "sel_acc": 1.0,
-      "acc": 0.8866328257191202,
-      "macro_f1": 0.9207853821219745,
-      "conf_wrong": 0.0
+      "coverage": 0.9357021996615905,
+      "sel_acc": 0.9963833634719711,
+      "acc": 0.9323181049069373,
+      "macro_f1": 0.9503265862075748,
+      "conf_wrong": 0.00338409475465313
      }
     }
    }
@@ -194,43 +194,43 @@
    "name": "Wind speed x direction x inlet design (PolSo-19 enclosures)",
    "criterion": "hooded design: accuracy drop at 4 m/s <= 5 pts vs calm",
    "verdict": "PASS",
-   "summary": "Accuracy at 0.3 / 2 / 4 / 6 m/s - baseline: 93% / 96% / 91% / 88%; hooded: 94% / 93% / 94% / 88%; multi_hole: 96% / 92% / 90% / 89%. PM10 bias at 4 m/s for dust (0/90/180 deg): baseline -3%/-9%/-18%; hooded -1%/-2%/-4%; multi_hole -9%/-8%/-9%. Model trained on hooded-enclosure data only.",
+   "summary": "Accuracy at 0.3 / 2 / 4 / 6 m/s - baseline: 95% / 97% / 93% / 90%; hooded: 94% / 98% / 93% / 90%; multi_hole: 96% / 95% / 92% / 90%. PM10 bias at 4 m/s for dust (0/90/180 deg): baseline -4%/-10%/-18%; hooded -1%/-3%/-6%; multi_hole -9%/-8%/-10%. Model trained on hooded-enclosure data only.",
    "data": {
     "acc": {
      "baseline": {
-      "0.3": 0.9321561338289963,
-      "2.0": 0.9609302325581396,
-      "4.0": 0.9141509433962264,
-      "6.0": 0.8809283551967709
+      "0.3": 0.9544609665427509,
+      "2.0": 0.9674418604651163,
+      "4.0": 0.9283018867924528,
+      "6.0": 0.900100908173562
      },
      "hooded": {
-      "0.3": 0.9412861136999068,
-      "2.0": 0.9314814814814815,
-      "4.0": 0.9385796545105566,
-      "6.0": 0.8761421319796955
+      "0.3": 0.9384902143522833,
+      "2.0": 0.975,
+      "4.0": 0.9328214971209213,
+      "6.0": 0.9025380710659898
      },
      "multi_hole": {
-      "0.3": 0.9591078066914498,
-      "2.0": 0.9154275092936803,
-      "4.0": 0.9013157894736842,
-      "6.0": 0.889795918367347
+      "0.3": 0.9563197026022305,
+      "2.0": 0.9451672862453532,
+      "4.0": 0.9210526315789473,
+      "6.0": 0.9040816326530612
      }
     },
     "bias": {
      "baseline": {
-      "0.0": -0.031187371392666807,
-      "90.0": -0.08954815509693559,
-      "180.0": -0.17513513237091471
+      "0.0": -0.039089047600748716,
+      "90.0": -0.10401565026660131,
+      "180.0": -0.18230144054844866
      },
      "hooded": {
-      "0.0": -0.011536319753193136,
-      "90.0": -0.01870131900619698,
-      "180.0": -0.0358017683547347
+      "0.0": -0.010460526676950521,
+      "90.0": -0.033971485688503056,
+      "180.0": -0.05609363221219388
      },
      "multi_hole": {
-      "0.0": -0.09191832261791677,
-      "90.0": -0.07915458525214625,
-      "180.0": -0.09172381346874692
+      "0.0": -0.0905792128940881,
+      "90.0": -0.0756594222706719,
+      "180.0": -0.10292806881271033
      }
     }
    }
@@ -240,11 +240,11 @@
    "name": "Mixed sources (50/50 and 75/25 pairs)",
    "criterion": "answered label is a real contributor >= 85 %; dominant source found >= 70 % at 75/25",
    "verdict": "PASS",
-   "summary": "Answered labels naming a real contributor: 100%. Abstained on 40% of mixed windows. Dominant source correctly named at 75/25: 71%.",
+   "summary": "Answered labels naming a real contributor: 100%. Abstained on 39% of mixed windows. Dominant source correctly named at 75/25: 71%.",
    "data": {
     "hit": 1.0,
-    "dom_acc": 0.7129455909943715,
-    "abstain": 0.39814814814814814
+    "dom_acc": 0.7110694183864915,
+    "abstain": 0.3935185185185185
    }
   },
   "T07": {
@@ -252,7 +252,7 @@
    "name": "Response time to a new source",
    "criterion": "median time-to-correct-label <= 90 s and <= 10 % never detected",
    "verdict": "FAIL",
-   "summary": "Median 149 s, 90th percentile 230 s from source onset to first correct label (60 s window, 30 s hop, EMA smoothing); 2% never detected.",
+   "summary": "Median 149 s, 90th percentile 179 s from source onset to first correct label (60 s window, 30 s hop, EMA smoothing); 0% never detected.",
    "data": {
     "latency": [
      149.0,
@@ -265,16 +265,16 @@
      149.0,
      149.0,
      149.0,
-     149.0,
+     179.0,
      329.0,
      149.0,
-     NaN,
+     149.0,
      449.0,
      149.0,
      239.0,
      149.0,
      149.0,
-     329.0,
+     359.0,
      149.0,
      149.0,
      149.0,
@@ -286,18 +286,18 @@
      149.0,
      149.0,
      149.0,
-     209.0,
+     179.0,
+     149.0,
+     149.0,
      149.0,
      179.0,
      149.0,
      179.0,
      149.0,
-     179.0,
-     239.0,
      149.0,
      149.0,
      149.0,
-     179.0,
+     149.0,
      179.0,
      149.0
     ]
@@ -308,21 +308,21 @@
    "name": "Sensor ageing / drift 0-365 days",
    "criterion": "macro-F1 drop at 180 days <= 10 pts with on-device baseline tracking",
    "verdict": "PASS",
-   "summary": "macro-F1 with baseline tracking: day 0 0.81, day 30 0.82, day 90 0.82, day 180 0.82, day 365 0.80. With frozen factory baseline: day 0 0.83, day 30 0.82, day 90 0.80, day 180 0.74, day 365 0.63.",
+   "summary": "macro-F1 with baseline tracking: day 0 0.81, day 30 0.81, day 90 0.81, day 180 0.81, day 365 0.80. With frozen factory baseline: day 0 0.81, day 30 0.80, day 90 0.79, day 180 0.75, day 365 0.70.",
    "data": {
     "tracking": {
-     "0": 0.8147952979945489,
-     "30": 0.8179965268771522,
-     "90": 0.8227585504980894,
-     "180": 0.8205298109862336,
-     "365": 0.8034025780436677
+     "0": 0.8127544531583869,
+     "30": 0.8112407644168421,
+     "90": 0.8085220352236213,
+     "180": 0.8127993659544475,
+     "365": 0.8030064853528867
     },
     "frozen": {
-     "0": 0.8300719558872984,
-     "30": 0.8228000491729783,
-     "90": 0.8035980615156222,
-     "180": 0.7431128168677021,
-     "365": 0.6296064066394279
+     "0": 0.8133305865755686,
+     "30": 0.8009223827283604,
+     "90": 0.7865738464779802,
+     "180": 0.7490494955725822,
+     "365": 0.6982070183169362
     }
    }
   },
@@ -331,19 +331,19 @@
    "name": "Unit-to-unit variation (10 pilot prototypes)",
    "criterion": "std of macro-F1 across units <= 0.05 and worst unit >= 0.80",
    "verdict": "PASS",
-   "summary": "macro-F1 mean 0.88, std 0.023, worst unit 0.83, best 0.91 (same scenarios replayed on every unit).",
+   "summary": "macro-F1 mean 0.90, std 0.016, worst unit 0.86, best 0.92 (same scenarios replayed on every unit).",
    "data": {
     "per_unit": {
-     "100": 0.8867975589781045,
-     "101": 0.8875662089754355,
-     "102": 0.8903121302477974,
-     "103": 0.8282749885629567,
-     "104": 0.9080456338340243,
-     "105": 0.8912133000335107,
-     "106": 0.8773538400045972,
-     "107": 0.8903816979144288,
-     "108": 0.8904943287407884,
-     "109": 0.8435978038620664
+     "100": 0.8924059481139184,
+     "101": 0.9017149834653428,
+     "102": 0.9200267485285721,
+     "103": 0.8846229394825494,
+     "104": 0.9113758048128224,
+     "105": 0.8973986697436185,
+     "106": 0.8989828826021282,
+     "107": 0.9064602216705506,
+     "108": 0.8964551408550493,
+     "109": 0.8590647391123867
     }
    }
   },
@@ -352,19 +352,19 @@
    "name": "Unseen source subtypes and confounders",
    "criterion": "confident-wrong <= 25 % on unseen subtypes and <= 30 % on confounders (cooking, incense); fog <= 10 %",
    "verdict": "FAIL",
-   "summary": "cooking: correct 0% / uncertain 16% / wrong 84%; dust_storm: correct 83% / uncertain 12% / wrong 5%; fog: correct 100% / uncertain 0% / wrong 0%; incense: correct 0% / uncertain 45% / wrong 55%; trash_burning: correct 22% / uncertain 52% / wrong 26%; two_stroke_traffic: correct 28% / uncertain 56% / wrong 16%.",
+   "summary": "cooking: correct 0% / uncertain 19% / wrong 81%; dust_storm: correct 86% / uncertain 11% / wrong 3%; fog: correct 100% / uncertain 0% / wrong 0%; incense: correct 0% / uncertain 72% / wrong 28%; trash_burning: correct 24% / uncertain 55% / wrong 21%; two_stroke_traffic: correct 31% / uncertain 56% / wrong 12%.",
    "data": {
     "table": {
      "cooking": {
       "correct": 0.0,
-      "uncertain": 0.1625,
-      "wrong": 0.8375,
+      "uncertain": 0.1875,
+      "wrong": 0.8125,
       "top": "biomass_burning"
      },
      "dust_storm": {
-      "correct": 0.8291666666666667,
-      "uncertain": 0.125,
-      "wrong": 0.04583333333333333,
+      "correct": 0.8583333333333333,
+      "uncertain": 0.10833333333333334,
+      "wrong": 0.03333333333333333,
       "top": "dust"
      },
      "fog": {
@@ -375,20 +375,20 @@
      },
      "incense": {
       "correct": 0.0,
-      "uncertain": 0.44583333333333336,
-      "wrong": 0.5541666666666667,
-      "top": "biomass_burning"
+      "uncertain": 0.725,
+      "wrong": 0.275,
+      "top": "uncertain"
      },
      "trash_burning": {
-      "correct": 0.225,
-      "uncertain": 0.5166666666666667,
-      "wrong": 0.25833333333333336,
+      "correct": 0.2375,
+      "uncertain": 0.5541666666666667,
+      "wrong": 0.20833333333333334,
       "top": "uncertain"
      },
      "two_stroke_traffic": {
-      "correct": 0.2833333333333333,
-      "uncertain": 0.5583333333333333,
-      "wrong": 0.15833333333333333,
+      "correct": 0.3125,
+      "uncertain": 0.5625,
+      "wrong": 0.125,
       "top": "uncertain"
      }
     }
@@ -399,65 +399,65 @@
    "name": "24-hour field days in six environments",
    "criterion": "overall selective accuracy >= 80 % at coverage >= 70 %",
    "verdict": "PASS",
-   "summary": "All days: selective accuracy 89%, coverage 75%, macro-F1 0.77. Construction site, pre-monsoon summer: 99% @ 94%; Highway toll plaza: 45% @ 54%; Industrial estate: 100% @ 72%; Residential park, monsoon: 100% @ 89%; Rural village, crop-burning season: 100% @ 88%; Urban roadside, winter (Delhi-like): 58% @ 51%.",
+   "summary": "All days: selective accuracy 97%, coverage 78%, macro-F1 0.83. Construction site, pre-monsoon summer: 100% @ 90%; Highway toll plaza: 97% @ 44%; Industrial estate: 100% @ 76%; Residential park, monsoon: 99% @ 98%; Rural village, crop-burning season: 100% @ 84%; Urban roadside, winter (Delhi-like): 85% @ 74%.",
    "data": {
     "per_day": {
      "Construction site, pre-monsoon summer": {
       "n": 2525,
-      "coverage": 0.9386138613861386,
-      "sel_acc": 0.9940928270042194,
-      "acc": 0.9330693069306931,
-      "macro_f1": 0.38652220783540425,
-      "conf_wrong": 0.005544554455445544
+      "coverage": 0.897029702970297,
+      "sel_acc": 0.9955849889624724,
+      "acc": 0.8930693069306931,
+      "macro_f1": 0.3736596360785504,
+      "conf_wrong": 0.0039603960396039604
      },
      "Highway toll plaza": {
       "n": 2354,
-      "coverage": 0.54035683942226,
-      "sel_acc": 0.45047169811320753,
-      "acc": 0.24341546304163125,
-      "macro_f1": 0.14588290179612784,
-      "conf_wrong": 0.29694137638062873
+      "coverage": 0.4362786745964316,
+      "sel_acc": 0.9707887049659202,
+      "acc": 0.4235344095157179,
+      "macro_f1": 0.2628934386925993,
+      "conf_wrong": 0.012744265080713678
      },
      "Industrial estate": {
       "n": 2638,
-      "coverage": 0.72289613343442,
-      "sel_acc": 0.9989512323020451,
-      "acc": 0.7221379833206975,
-      "macro_f1": 0.25797491039426523,
-      "conf_wrong": 0.000758150113722517
+      "coverage": 0.756633813495072,
+      "sel_acc": 1.0,
+      "acc": 0.756633813495072,
+      "macro_f1": 0.25279554744694116,
+      "conf_wrong": 0.0
      },
      "Residential park, monsoon": {
       "n": 2650,
-      "coverage": 0.8883018867924528,
-      "sel_acc": 0.9991503823279524,
-      "acc": 0.8875471698113208,
-      "macro_f1": 0.189983844911147,
-      "conf_wrong": 0.0007547169811320754
+      "coverage": 0.9815094339622642,
+      "sel_acc": 0.9926951172625913,
+      "acc": 0.9743396226415094,
+      "macro_f1": 0.1986153846153846,
+      "conf_wrong": 0.007169811320754717
      },
      "Rural village, crop-burning season": {
       "n": 2778,
-      "coverage": 0.8801295896328294,
-      "sel_acc": 0.9987730061349693,
-      "acc": 0.8790496760259179,
-      "macro_f1": 0.3735356004250797,
-      "conf_wrong": 0.0010799136069114472
+      "coverage": 0.838012958963283,
+      "sel_acc": 0.9969931271477663,
+      "acc": 0.8354931605471563,
+      "macro_f1": 0.3612955940824793,
+      "conf_wrong": 0.0025197984161267097
      },
      "Urban roadside, winter (Delhi-like)": {
       "n": 2446,
-      "coverage": 0.5089942763695829,
-      "sel_acc": 0.5847389558232932,
-      "acc": 0.29762878168438267,
-      "macro_f1": 0.1208169576702532,
-      "conf_wrong": 0.21136549468520033
+      "coverage": 0.7363041700735895,
+      "sel_acc": 0.8484175458078845,
+      "acc": 0.624693376941946,
+      "macro_f1": 0.3188890961656556,
+      "conf_wrong": 0.1116107931316435
      }
     },
     "overall": {
      "n": 15391,
-     "coverage": 0.7532324085504516,
-     "sel_acc": 0.8932976796342621,
-     "acc": 0.6728607627834449,
-     "macro_f1": 0.7690168990275981,
-     "conf_wrong": 0.08037164576700669
+     "coverage": 0.7808459489311935,
+     "sel_acc": 0.971792311532701,
+     "acc": 0.7588200896627899,
+     "macro_f1": 0.8264777346696945,
+     "conf_wrong": 0.022025859268403614
     }
    }
   },
@@ -466,46 +466,46 @@
    "name": "Fault injection (UART, sensor death, fan stall, I2C, SD card)",
    "criterion": "no crashes; dead sensors flagged >= 95 %; 0.1 % UART errors cost <= 3 pts; stalled-fan windows not reported as a confident source (<= 5 %)",
    "verdict": "FAIL",
-   "summary": "none: acc 92%, flagged-after 0%, confident-after 79%; uart_bit_errors_0.1%: acc 93%, flagged-after 0%, confident-after 79%; uart_bit_errors_1%+slips: acc 100%, flagged-after 92%, confident-after 8%; pms_frames_dropped_30%: acc 100%, flagged-after 92%, confident-after 7%; pms_dead_after_1h: acc 99%, flagged-after 100%, confident-after 0%; pms_fan_stall_after_1h: acc 93%, flagged-after 0%, confident-after 100%; bme_i2c_errors_40%: acc 100%, flagged-after 96%, confident-after 4%; bme_dead_after_1h: acc 99%, flagged-after 100%, confident-after 0%; sd_write_fail_20%: acc 92%, flagged-after 0%, confident-after 79%. No crashes.",
+   "summary": "none: acc 92%, flagged-after 0%, confident-after 80%; uart_bit_errors_0.1%: acc 94%, flagged-after 0%, confident-after 81%; uart_bit_errors_1%+slips: acc 100%, flagged-after 91%, confident-after 9%; pms_frames_dropped_30%: acc 100%, flagged-after 95%, confident-after 5%; pms_dead_after_1h: acc 98%, flagged-after 100%, confident-after 0%; pms_fan_stall_after_1h: acc 92%, flagged-after 0%, confident-after 100%; bme_i2c_errors_40%: acc 100%, flagged-after 95%, confident-after 5%; bme_dead_after_1h: acc 98%, flagged-after 100%, confident-after 0%; sd_write_fail_20%: acc 92%, flagged-after 0%, confident-after 80%. No crashes.",
    "data": {
     "cases": {
      "none": {
-      "acc": 0.9230769230769231,
+      "acc": 0.9175824175824175,
       "fault_flag_after": 0.0,
-      "confident_after": 0.7863247863247863,
+      "confident_after": 0.8034188034188035,
       "pms_errors": 0,
       "sd_lost": 0
      },
      "uart_bit_errors_0.1%": {
-      "acc": 0.9285714285714286,
+      "acc": 0.9395604395604396,
       "fault_flag_after": 0.0,
-      "confident_after": 0.7863247863247863,
-      "pms_errors": 215,
+      "confident_after": 0.811965811965812,
+      "pms_errors": 197,
       "sd_lost": 0
      },
      "uart_bit_errors_1%+slips": {
       "acc": 1.0,
-      "fault_flag_after": 0.9230769230769231,
-      "confident_after": 0.07692307692307693,
-      "pms_errors": 1895,
+      "fault_flag_after": 0.905982905982906,
+      "confident_after": 0.09401709401709402,
+      "pms_errors": 1964,
       "sd_lost": 0
      },
      "pms_frames_dropped_30%": {
       "acc": 1.0,
-      "fault_flag_after": 0.9230769230769231,
-      "confident_after": 0.06837606837606838,
+      "fault_flag_after": 0.9487179487179487,
+      "confident_after": 0.05128205128205128,
       "pms_errors": 0,
       "sd_lost": 0
      },
      "pms_dead_after_1h": {
-      "acc": 0.989247311827957,
+      "acc": 0.978494623655914,
       "fault_flag_after": 1.0,
       "confident_after": 0.0,
       "pms_errors": 0,
       "sd_lost": 0
      },
      "pms_fan_stall_after_1h": {
-      "acc": 0.9285714285714286,
+      "acc": 0.9175824175824175,
       "fault_flag_after": 0.0,
       "confident_after": 1.0,
       "pms_errors": 0,
@@ -513,22 +513,22 @@
      },
      "bme_i2c_errors_40%": {
       "acc": 1.0,
-      "fault_flag_after": 0.9572649572649573,
-      "confident_after": 0.042735042735042736,
+      "fault_flag_after": 0.9487179487179487,
+      "confident_after": 0.05128205128205128,
       "pms_errors": 0,
       "sd_lost": 0
      },
      "bme_dead_after_1h": {
-      "acc": 0.989247311827957,
+      "acc": 0.978494623655914,
       "fault_flag_after": 1.0,
       "confident_after": 0.0,
       "pms_errors": 0,
       "sd_lost": 0
      },
      "sd_write_fail_20%": {
-      "acc": 0.9230769230769231,
+      "acc": 0.9175824175824175,
       "fault_flag_after": 0.0,
-      "confident_after": 0.7863247863247863,
+      "confident_after": 0.8034188034188035,
       "pms_errors": 0,
       "sd_lost": 0
      }
@@ -541,12 +541,12 @@
    "name": "Firmware C vs Python twin (software-in-the-loop)",
    "criterion": "label agreement >= 99.5 %, max probability diff <= 0.01, RAM <= 32 KB, inference <= 10 ms",
    "verdict": "PASS",
-   "summary": "Labels agree on 100.00% of 537 windows (incl. a stream with UART corruption and I2C errors); max probability difference 1.1e-07; max relative feature difference 1.8e-03. Firmware state 3.1 KB RAM, model 1.8 KB flash, 1392 MACs per inference, est. ~0.18 ms per window at 170 MHz (measure with the DWT cycle counter on the board). Builds with -Wall -Wextra and no warnings.",
+   "summary": "Labels agree on 100.00% of 537 windows (incl. a stream with UART corruption and I2C errors); max probability difference 1.3e-07; max relative feature difference 2.6e-03. Firmware state 3.1 KB RAM, model 1.8 KB flash, 1392 MACs per inference, est. ~0.18 ms per window at 170 MHz (measure with the DWT cycle counter on the board). Builds with -Wall -Wextra and no warnings.",
    "data": {
     "agree": 1.0,
-    "max_dp": 1.1092543539259481e-07,
-    "max_df": 0.0017773139513339896,
-    "state_bytes": 3200,
+    "max_dp": 1.2572334173732713e-07,
+    "max_df": 0.002561163709118616,
+    "state_bytes": 3204,
     "weight_bytes": 1804,
     "macs": 1392,
     "est_ms": 0.17981176470588234
@@ -557,7 +557,7 @@
    "name": "Battery life (2000 mAh Li-ion) and duty cycling",
    "criterion": ">= 24 h continuous sampling in the configuration as specified (NUCLEO + 2000 mAh)",
    "verdict": "FAIL",
-   "summary": "NUCLEO board, continuous: 7.3 h (232 mA avg); Custom PCB, continuous: 11.0 h (154 mA avg); Custom PCB, PMS 90 s on / 90 s off: 18.2 h (93 mA avg); Custom PCB, PMS 90 s on / 270 s off: 27.2 h (63 mA avg). Duty cycling keeps selective accuracy at 85% (1/2 duty) and 85% (1/4 duty) but only samples 33% / 17% of the time, so short events are missed.",
+   "summary": "NUCLEO board, continuous: 7.3 h (232 mA avg); Custom PCB, continuous: 11.0 h (154 mA avg); Custom PCB, PMS 90 s on / 90 s off: 18.2 h (93 mA avg); Custom PCB, PMS 90 s on / 270 s off: 27.2 h (63 mA avg). Duty cycling keeps selective accuracy at 93% (1/2 duty) and 93% (1/4 duty) but only samples 33% / 17% of the time, so short events are missed.",
    "data": {
     "modes": {
      "NUCLEO board, continuous": {
@@ -579,11 +579,11 @@
     },
     "duty": {
      "180": {
-      "sel_acc": 0.8496369073045706,
+      "sel_acc": 0.9311489008710079,
       "coverage_time": 0.3333333333333333
      },
      "360": {
-      "sel_acc": 0.8533218291630716,
+      "sel_acc": 0.9343853820598007,
       "coverage_time": 0.16666666666666666
      }
     }
@@ -594,12 +594,12 @@
    "name": "Research question: PM-only vs gas-only vs fused",
    "criterion": "fused macro-F1 >= best single-sensor model + 0.05",
    "verdict": "PASS",
-   "summary": "macro-F1 (no abstention) on all held-out field windows: PM-only 0.76, gas-only 0.60, fused MLP 0.84 (+0.09), fused random forest 0.95.",
+   "summary": "macro-F1 (no abstention) on all held-out field windows: PM-only 0.84, gas-only 0.54, fused MLP 0.90 (+0.07), fused random forest 0.95.",
    "data": {
-    "B_pm_only": 0.7550021293656638,
-    "B_gas_only": 0.599003731185568,
-    "B_fused": 0.8438086565929117,
-    "B_rf": 0.9492089408100922
+    "B_pm_only": 0.8377971155810211,
+    "B_gas_only": 0.5376843565088464,
+    "B_fused": 0.9031620111099727,
+    "B_rf": 0.9514021861377809
    }
   }
  }

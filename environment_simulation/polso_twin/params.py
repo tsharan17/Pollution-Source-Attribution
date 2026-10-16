@@ -191,6 +191,8 @@ PMS_UNIT_GAIN_SIGMA = 0.10
 PMS_UNIT_SIZE_SIGMA = 0.05
 PMS_GAIN_LOSS_PER_DAY = 0.0003   # fan / optics fouling
 PMS_WAKE_STABLE_S = 30      # datasheet: wait 30 s after fan start
+PMS_SAMPLE_HEAT_C = 5.0      # laser + fan warm the sample air inside the housing, lowering its effective RH   EST
+PMS_RH_CAP = 95.0           # effective RH seen by the particles is capped (droplet / fog regime not modelled)
 # (PMS7003 datasheet: 0.3-10 um, counts per 0.1 L, uint16 fields, 32-byte frame 0x42 0x4D)
 # Coarse under-response follows published low-cost OPC evaluations (e.g. Kuula 2020).
 

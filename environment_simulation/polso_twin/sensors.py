@@ -102,7 +102,9 @@ def pms_calibration_factor():
     if _KCAL is None:
         from .physics import subtype_number_per_pm25
         npp = subtype_number_per_pm25(P.BACKGROUND_MODES)
-        cum = sum(k * _channel_response(m, np.array([40.0]), np.array([0.0]), np.array([0.0]),
+        from .physics import abs_humidity
+        rh_cal = np.array([float(rel_humidity(25.0 + P.PMS_SAMPLE_HEAT_C, abs_humidity(25.0, 40.0)))])
+        cum = sum(k * _channel_response(m, rh_cal, np.array([0.0]), np.array([0.0]),
                                         "hooded", 1.0)
                   for m, k in zip(P.BACKGROUND_MODES, npp))
         diff = cum - np.concatenate([cum[:, 1:], np.zeros((1, 1))], 1)
@@ -114,11 +116,12 @@ def simulate_pms(env, unit: Unit, age_days, enclosure, rng, inlet_facing=0.0):
     """Returns cumulative counts per 0.1 L (T,6) and PM1/2.5/10 CF=1 and ATM (T,3), all uint16."""
     theta = angle_diff(env["wdir"], inlet_facing) % 360
     cum = np.zeros((len(env["t"]), 6))
+    # the sample is warmed inside the sensor, so particles see a lower RH than the ambient air
+    rh_s = np.clip(rel_humidity(env["temp"] + P.PMS_SAMPLE_HEAT_C, env["ah"]), 0, P.PMS_RH_CAP)
     for mode, n_t in zip(env["modes"], env["mode_n"]):
         if np.max(n_t) <= 0:
             continue
-        cum += n_t[:, None] * _channel_response(mode, env["rh"], env["u"], theta, enclosure,
-                                                unit.pms_size)
+        cum += n_t[:, None] * _channel_response(mode, rh_s, env["u"], theta, enclosure, unit.pms_size)
     cum *= np.exp(-cum[:, :1] * P.PMS_COINCIDENCE)               # coincidence loss
     diff = np.clip(cum - np.concatenate([cum[:, 1:], np.zeros((len(cum), 1))], 1), 0, None)
     counted = rng.poisson(diff * P.PMS_SAMPLE_CM3) / P.PMS_SAMPLE_CM3

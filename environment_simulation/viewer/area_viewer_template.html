@@ -3,8 +3,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: full-bleed 3D survey model; floating instrument panels on the edges, timeline docked at the bottom.
-   Single deliberate look (a pale architectural massing model), so colours are fixed rather than theme-switched. */
+/* Layout: the 3D scene fills the window; every panel lives in one CSS grid shell
+   (header / case bar / main area / tour row / timeline), so panels can never cover each other.
+   Each view (map, devices, STM32, build) owns the main area. Single deliberate light look. */
 :root{
   color-scheme: light;
   --ground:#dfe3df; --paper:#f6f7f4; --paper-2:#eceee9; --ink:#1d2321; --ink-2:#56605b; --ink-3:#8b948f;
@@ -14,80 +15,97 @@
   --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
 }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{margin:0;background:var(--ground);color:var(--ink);font:13px/1.45 var(--body);overflow:hidden}
-#stage{position:fixed;inset:0}
+#stage{position:fixed;inset:0;z-index:0}
 #stage canvas{display:block;width:100%;height:100%;outline:none}
-.panel{position:absolute;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(6px);
-  border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px rgba(30,40,35,.10)}
-.top{top:calc(12px + env(safe-area-inset-top,0px));left:16px;right:16px;display:flex;gap:12px;align-items:flex-start;
-  pointer-events:none;position:absolute}
-.top>*{pointer-events:auto}
-.brand{padding:12px 14px;max-width:440px;min-width:0}
-.brand h1{font:700 26px/1 var(--display);letter-spacing:.01em;margin:0;text-transform:uppercase}
-.brand h1 span{color:var(--ink-3);font-weight:500}
-.brand p{margin:6px 0 0;color:var(--ink-2)}
-#cases{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-#cases button{font:600 12px/1 var(--body);padding:7px 10px;border-radius:99px;border:1px solid var(--line);
-  background:var(--paper);color:var(--ink-2);cursor:pointer}
-#cases button[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-#cases button:focus-visible,.btn:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.right{margin-left:auto;display:flex;flex-direction:column;gap:10px;width:250px}
-.right .panel{position:relative}
-.wx{padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
-.clock{font:600 30px/1 var(--display);font-variant-numeric:tabular-nums}
+#loading{position:absolute;inset:0;display:grid;place-items:center;font:600 20px var(--display);color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em}
+
+/* ---- shell ---- */
+.shell{position:fixed;inset:0;z-index:2;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto auto;gap:8px;
+  padding:calc(10px + env(safe-area-inset-top,0px)) 16px calc(10px + env(safe-area-inset-bottom,0px));pointer-events:none}
+.shell>*{pointer-events:auto;min-width:0}
+.panel{background:color-mix(in srgb,var(--paper) 93%,transparent);backdrop-filter:blur(6px);border:1px solid var(--line);
+  border-radius:8px;box-shadow:0 6px 24px rgba(30,40,35,.10)}
+.main{position:relative;min-height:0;pointer-events:none}
+.main>*{pointer-events:auto}
+
+/* header */
+.hdr{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:8px 12px}
+.hdr h1{font:700 24px/1 var(--display);letter-spacing:.01em;margin:0;text-transform:uppercase;white-space:nowrap}
+.hdr h1 span{color:var(--ink-3);font-weight:500}
+.views{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.views button{font:600 12px/1 var(--body);padding:8px 13px;border:0;border-right:1px solid var(--line);background:var(--paper);color:var(--ink-2);cursor:pointer}
+.views button:last-child{border-right:0}
+.views button[aria-selected="true"]{background:var(--accent);color:var(--paper)}
+.views button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.actions{display:flex;gap:6px}
+.wx{margin-left:auto;display:flex;align-items:center;gap:10px}
+.clock{font:600 24px/1 var(--display);font-variant-numeric:tabular-nums}
+#compass{width:38px;height:38px}
+.wxv{display:flex;flex-direction:column;gap:1px}
 .lbl{font:500 10.5px/1.2 var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3)}
-.val{font:500 13px/1.3 var(--mono);font-variant-numeric:tabular-nums}
-#compass{width:64px;height:64px;grid-row:span 3}
-.stats{padding:12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.stats b{display:block;font:600 22px/1 var(--display);font-variant-numeric:tabular-nums}
-.legend{position:absolute;left:16px;bottom:calc(92px + env(safe-area-inset-bottom,0px));padding:10px 12px;display:grid;gap:5px}
-.legend div{display:flex;align-items:center;gap:7px;color:var(--ink-2)}
-.sw{width:11px;height:11px;border-radius:50%;flex:none}
-.legend .note{font-size:11px;color:var(--ink-3);max-width:210px}
-.timeline{left:16px;right:16px;bottom:calc(12px + env(safe-area-inset-bottom,0px));padding:10px 12px;display:flex;gap:12px;align-items:center}
-.btn{font:600 12px/1 var(--body);border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:6px;
-  padding:8px 11px;cursor:pointer;white-space:nowrap}
+.val{font:500 12px/1.3 var(--mono);font-variant-numeric:tabular-nums}
+
+/* case bar */
+.casebar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:6px 10px}
+#cases{display:flex;flex-wrap:wrap;gap:5px}
+#cases button{font:600 12px/1 var(--body);padding:6px 10px;border-radius:99px;border:1px solid var(--line);background:var(--paper);color:var(--ink-2);cursor:pointer}
+#cases button[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+#blurb{margin:0;color:var(--ink-2);font-size:12.5px;flex:1 1 240px;min-width:0}
+
+.btn{font:600 12px/1 var(--body);border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:6px;padding:8px 11px;cursor:pointer;white-space:nowrap}
 .btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink);min-width:64px}
+.btn:disabled{opacity:.45;cursor:default}
 select{font:500 12px var(--body);padding:7px 6px;border-radius:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
-.track{flex:1;min-width:0;position:relative;height:46px}
-#strip{position:absolute;left:0;right:0;top:0;height:28px;width:100%;border-radius:4px;cursor:pointer}
-#scrub{position:absolute;left:0;right:0;bottom:0;width:100%;margin:0;accent-color:var(--ink)}
-.tl-key{display:flex;gap:10px;color:var(--ink-3);font-size:11px;flex-wrap:wrap;max-width:180px}
-.tl-key i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
-#panel{right:16px;top:calc(300px + env(safe-area-inset-top,0px));width:300px;padding:14px;max-height:calc(100% - 420px);overflow:auto}
+#cases button:focus-visible,.btn:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---- map view ---- */
+.legend{position:absolute;left:0;bottom:0;padding:10px 12px;display:grid;gap:5px;max-width:240px}
+.legend div{display:flex;align-items:center;gap:7px;color:var(--ink-2)}
+.legend .note{font-size:11px;color:var(--ink-3)}
+.sw{width:11px;height:11px;border-radius:50%;flex:none}
+.side{position:absolute;right:0;top:0;bottom:0;width:300px;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.side>*{pointer-events:auto}
+.stats{padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:none}
+.stats b{display:block;font:600 21px/1 var(--display);font-variant-numeric:tabular-nums}
+#panel{padding:14px;overflow:auto;min-height:0;flex:0 1 auto}
 #panel h2{font:700 22px/1 var(--display);margin:0;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
-#panel .x{font:500 18px/1 var(--body);border:0;background:none;cursor:pointer;color:var(--ink-2);padding:2px 6px}
+.x{font:500 20px/1 var(--body);border:0;background:none;cursor:pointer;color:var(--ink-2);padding:2px 6px}
 .row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--paper-2)}
 .pill{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--body)}
 .bar{height:6px;border-radius:3px;background:var(--paper-2);overflow:hidden;margin-top:4px}
 .bar i{display:block;height:100%;background:var(--ink)}
+
 #hist{width:100%;height:46px;margin-top:6px}
 .fault{color:var(--bad);font-weight:600}
 .src{color:var(--ink-2);font-size:12px}
-.tag{position:absolute;pointer-events:none;transform:translate(-50%,-100%);font:600 11px/1 var(--mono);color:var(--ink);
+.openDev{margin-top:10px;width:100%}
+.tag{position:absolute;z-index:1;pointer-events:none;transform:translate(-50%,-100%);font:600 11px/1 var(--mono);color:var(--ink);
   background:color-mix(in srgb,var(--paper) 85%,transparent);border:1px solid var(--line);border-radius:4px;padding:3px 5px;white-space:nowrap}
 .tag.src-tag{font:500 10.5px/1 var(--body);color:var(--ink-2);background:none;border:0;text-shadow:0 0 3px var(--paper),0 0 3px var(--paper)}
 .tag .ok{color:var(--good)} .tag .no{color:var(--bad)}
-#tip{position:absolute;pointer-events:none;padding:8px 10px;font-size:12px;max-width:240px;z-index:5}
-#loading{position:absolute;inset:0;display:grid;place-items:center;font:600 20px var(--display);color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em}
-/* view switch + devices view */
-.views{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-top:10px}
-.views button{font:600 12px/1 var(--body);padding:7px 12px;border:0;background:var(--paper);color:var(--ink-2);cursor:pointer}
-.views button[aria-selected="true"]{background:var(--accent);color:var(--paper)}
-.views button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-body.dev-mode #stage, body.dev-mode .right, body.dev-mode .legend, body.dev-mode #panel, body.dev-mode #tip, body.dev-mode .tag{visibility:hidden}
-body.dev-mode{background:var(--paper-2)}
-#devView{position:absolute;left:16px;right:16px;top:var(--topH,200px);bottom:calc(84px + env(safe-area-inset-bottom,0px));
-  display:grid;grid-template-columns:210px minmax(0,1fr);gap:12px}
-#devTabs{overflow:auto;padding:6px;display:flex;flex-direction:column;gap:3px;position:relative}
+#tip{position:fixed;z-index:30;pointer-events:none;padding:8px 10px;font-size:12px;max-width:260px}
+
+/* which view owns the screen */
+body:not([data-view="map"]) #legend, body:not([data-view="map"]) #mapSide,
+body:not([data-view="map"]) .tag:not(.mcu-tag){display:none!important}
+body:not([data-view="mcu"]) .mcu-tag{display:none!important}
+body[data-view="dev"] #stage, body[data-view="build"] #stage{visibility:hidden}
+body[data-view="dev"], body[data-view="build"]{background:var(--paper-2)}
+
+/* ---- devices view ---- */
+#devView{position:absolute;inset:0;display:grid;grid-template-columns:210px minmax(0,1fr);gap:10px}
+#devTabs{overflow:auto;padding:6px;display:flex;flex-direction:column;gap:3px}
 #devTabs button{display:grid;grid-template-columns:12px 38px 1fr auto;gap:8px;align-items:center;text-align:left;
   font:500 12px/1.2 var(--body);padding:8px 9px;border:1px solid transparent;border-radius:6px;background:none;color:var(--ink);cursor:pointer}
 #devTabs button b{font:600 13px var(--mono)}
 #devTabs button span.l{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #devTabs button[aria-selected="true"]{background:var(--paper);border-color:var(--line);box-shadow:0 1px 3px rgba(30,40,35,.08)}
 #devTabs button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-#devDetail{overflow:auto;padding:16px 18px;display:flex;flex-direction:column;gap:14px;min-width:0;position:relative}
+#devDetail{overflow:auto;padding:16px 18px;display:flex;flex-direction:column;gap:14px;min-width:0}
 .dh{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
 .dh h2{font:700 30px/1 var(--display);margin:0;text-transform:uppercase}
 .dh .src{flex:1}
@@ -104,70 +122,168 @@ body.dev-mode{background:var(--paper-2)}
 .ck i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:3px}
 .two{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:14px}
 #miniMap{width:100%;max-width:220px;height:auto;cursor:default}
-.openDev{margin-top:10px;width:100%}
-@media (max-width:860px){
-  #devView{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
-  #devTabs{flex-direction:row;overflow-x:auto}
+
+/* ---- STM32 view ---- */
+#mcuView{position:absolute;right:0;top:0;bottom:0;width:400px;display:flex;flex-direction:column;gap:8px}
+#mcuBar{padding:8px 11px;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12px;color:var(--ink-2);flex:none}
+#mcuBar label{display:flex;gap:6px;align-items:center}
+#mcuPanel{flex:1;overflow:auto;padding:4px 14px 12px;min-height:0}
+.mh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:12px 0 6px;border-bottom:1px solid var(--line);padding-bottom:4px;flex-wrap:wrap}
+.mh b{font:700 15px var(--display);text-transform:uppercase;letter-spacing:.03em}
+.mg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 10px;margin:6px 0}
+.mg b{display:block;font:600 16px var(--display);font-variant-numeric:tabular-nums}
+.mg span{font-size:10.5px;color:var(--ink-3)}
+.mb{display:grid;grid-template-columns:96px 1fr 58px;gap:6px;align-items:center;font-size:11px;margin:2px 0}
+.mbn{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mbt{height:7px;background:var(--paper-2);border-radius:4px;overflow:hidden}.mbt i{display:block;height:100%;border-radius:4px}
+.mbv{font:500 11px var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.feat{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 8px;font-size:10px;color:var(--ink-3)}
+.feat span{display:flex;justify-content:space-between;gap:4px;white-space:nowrap;overflow:hidden}.feat b{font:500 10px var(--mono);color:var(--ink)}
+#mcuPanel canvas{width:100%;display:block;margin-top:6px;border-radius:4px}
+.t-SIM,.t-MODEL,.t-EST,.t-DOC,.t-PROP{font:700 9px var(--body);letter-spacing:.05em;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:1px;cursor:help;white-space:nowrap}
+.t-SIM{background:#dcefe5;color:#17643f}.t-MODEL{background:#dde7f6;color:#1c4f8f}.t-EST{background:#fbead1;color:#8a5200}
+.t-DOC{background:#e6e3f5;color:#3d2f86}.t-PROP{background:#f4dede;color:#8f2525}
+.foot{font-size:11px;color:var(--ink-3);margin-top:12px}
+
+/* ---- build view ---- */
+#buildView{position:absolute;inset:0;display:grid;grid-template-columns:220px minmax(0,1fr);gap:10px}
+#buildNav{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:2px}
+#buildNav a{display:block;padding:7px 9px;border-radius:6px;color:var(--ink);text-decoration:none;font-weight:500}
+#buildNav a:hover,#buildNav a:focus-visible{background:var(--paper-2);outline:none}
+#buildDoc{overflow:auto;padding:16px 22px 28px;min-width:0}
+#buildDoc h2{font:700 24px var(--display);text-transform:uppercase;margin:22px 0 6px;scroll-margin-top:10px}
+#buildDoc h2:first-child{margin-top:0}
+#buildDoc h3{font:700 16px var(--display);text-transform:uppercase;margin:14px 0 4px}
+#buildDoc p{max-width:80ch;margin:4px 0 8px}
+#buildDoc table{border-collapse:collapse;width:100%;font-size:12.5px;margin:6px 0 10px}
+#buildDoc td,#buildDoc th{padding:6px 8px;border-bottom:1px solid var(--paper-2);text-align:left;vertical-align:top}
+#buildDoc th{font-weight:600;color:var(--ink-2);font-size:11.5px;background:var(--paper)}
+#buildDoc code{font:500 12px var(--mono);background:var(--paper-2);padding:1px 4px;border-radius:3px}
+#buildDoc ol{max-width:90ch;padding-left:22px}#buildDoc li{margin-bottom:4px}
+.copyrow{display:flex;gap:8px;align-items:center;margin:4px 0 6px}
+.scroll{overflow-x:auto}
+
+/* ---- tour, footer, about ---- */
+#tour{justify-self:center;max-width:720px;width:100%;padding:12px 16px}
+#tour h3{font:700 18px var(--display);text-transform:uppercase;margin:0 0 4px}#tour p{margin:0 0 10px;font-size:14px}
+#tour .row2{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.timeline{display:flex;gap:10px;align-items:center;padding:9px 12px;flex-wrap:wrap}
+.timeline label.btn{display:flex;gap:6px;align-items:center}
+.track{flex:1 1 260px;min-width:0;position:relative;height:46px}
+#strip{position:absolute;left:0;right:0;top:0;height:28px;width:100%;border-radius:4px;cursor:pointer}
+#scrub{position:absolute;left:0;right:0;bottom:0;width:100%;margin:0;accent-color:var(--ink)}
+.tl-key{display:flex;gap:10px;color:var(--ink-3);font-size:11px;flex-wrap:wrap;max-width:180px}
+.tl-key i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+#about{position:fixed;inset:0;background:rgba(20,26,24,.45);display:grid;place-items:center;z-index:40;padding:16px}
+#about .box{background:var(--paper);border-radius:10px;max-width:900px;width:100%;max-height:86vh;overflow:auto;padding:18px 22px;font-size:13.5px}
+#about h2{font:700 24px var(--display);text-transform:uppercase;margin:0 0 8px;display:flex;justify-content:space-between}
+#about h3{font:700 16px var(--display);text-transform:uppercase;margin:16px 0 6px}
+#about table{width:100%;border-collapse:collapse;font-size:12.5px}#about td,#about th{padding:6px 8px;border-bottom:1px solid var(--paper-2);text-align:left;vertical-align:top}
+#about th{font-weight:600;color:var(--ink-2);font-size:11.5px}#about td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+ul.tight{margin:4px 0 8px;padding-left:20px}ul.tight li{margin-bottom:3px}
+
+/* ---- narrow screens: panels become bottom sheets inside the main area ---- */
+@media (max-width:900px){
+  .shell{gap:6px;padding-left:10px;padding-right:10px}
+  .hdr{gap:6px 10px}.hdr h1{font-size:20px}
+  .wx{margin-left:0}
+  .legend{display:none}
+  .side{left:0;width:auto;top:auto;max-height:55%}
+  .stats{grid-template-columns:repeat(4,1fr)}.stats b{font-size:17px}
+  #mcuView{left:0;width:auto;top:auto;height:58%}
+  #devView,#buildView{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
+  #devTabs,#buildNav{flex-direction:row;overflow-x:auto}
   #devTabs button{grid-template-columns:12px auto auto}
   #devTabs button span.l{display:none}
+  #buildNav a{white-space:nowrap}
   .two{grid-template-columns:1fr}
-}
-@media (max-width:860px){
-  .top{flex-direction:column}
-  .right{margin-left:0;width:100%;flex-direction:row}
-  .right .panel{flex:1;min-width:0}
-  #compass{width:48px;height:48px}
-  .legend{display:none}
-  #panel{left:16px;right:16px;width:auto;top:auto;bottom:calc(84px + env(safe-area-inset-bottom,0px));max-height:45%}
   .tl-key{display:none}
-  .brand h1{font-size:21px}
 }
-@media (max-width:520px){ .stats{display:none} .brand p{display:none} }
+@media (max-width:560px){
+  /* phone: one scrolling row per bar so the views keep most of the height */
+  .shell{gap:5px;padding-top:calc(6px + env(safe-area-inset-top,0px));padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
+  .hdr{padding:6px 8px;gap:6px}.hdr h1{font-size:18px}.hdr h1 span{display:none}
+  .views button{padding:7px 9px}
+  .actions .btn{padding:6px 8px}.actions #aboutBtn .long{display:none}
+  .wx{gap:6px}.clock{font-size:18px}#compass{width:28px;height:28px}.wxv{display:none}
+  .casebar{padding:5px 6px}
+  #blurb{display:none}
+  #cases{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}#cases button{flex:none}
+  .stats{display:none}
+  .timeline{gap:6px;padding:6px 8px}
+  .timeline .btn{padding:6px 8px}
+  .timeline label[for],.timeline label.btn:first-of-type{display:none}
+  .track{flex-basis:100%;order:5;height:40px}#strip{height:22px}
+  #mcuBar{flex-wrap:nowrap;overflow-x:auto;padding:6px 8px}#mcuBar label{flex:none}
+  #mcuView{height:66%}
+  #tour{padding:8px 10px}#tour p{font-size:12.5px;margin-bottom:6px}#tour h3{font-size:15px}
+}
 </style>
 
 <div id="stage"><div id="loading">Building the map…</div></div>
-<div class="top">
-  <div class="panel brand">
+<div class="shell">
+  <header class="panel hdr">
     <h1>PolSo array <span>· 2 × 2 km</span></h1>
-    <p id="blurb"></p>
-    <nav id="cases" role="tablist" aria-label="Simulation case"></nav>
-    <div class="views" role="tablist" aria-label="View"><button id="vMap" role="tab" aria-selected="true">3D map</button><button id="vDev" role="tab" aria-selected="false">Devices</button></div>
-  </div>
-  <div class="right">
-    <div class="panel wx">
-      <div><div class="lbl">Local time</div><div class="clock" id="clock">--:--</div></div>
+    <div class="views" role="tablist" aria-label="View">
+      <button id="vMap" role="tab" aria-selected="true">3D map</button><button id="vDev" role="tab" aria-selected="false">Devices</button><button id="vMcu" role="tab" aria-selected="false">STM32</button><button id="vBuild" role="tab" aria-selected="false">Build</button>
+    </div>
+    <div class="actions"><button class="btn" id="tourBtn">Guided tour</button><button class="btn" id="aboutBtn">About<span class="long"> &amp; accuracy</span></button></div>
+    <div class="wx">
+      <div class="clock" id="clock">--:--</div>
       <canvas id="compass" width="128" height="128" aria-label="Wind direction"></canvas>
-      <div><span class="lbl">Temp / RH</span> <span class="val" id="trh"></span></div>
-      <div><span class="lbl">Wind</span> <span class="val" id="wind"></span></div>
+      <div class="wxv"><span class="val" id="trh"></span><span class="val" id="wind"></span></div>
     </div>
-    <div class="panel stats">
-      <div><b id="sAcc">–</b><span class="lbl">Correct when answering</span></div>
-      <div><b id="sCov">–</b><span class="lbl">Answered (not uncertain)</span></div>
-      <div><b id="sNow">–</b><span class="lbl">Correct right now</span></div>
-      <div><b id="sFault">–</b><span class="lbl">Devices in fault</span></div>
-    </div>
+  </header>
+  <div class="panel casebar">
+    <nav id="cases" role="tablist" aria-label="Simulation case"></nav>
+    <p id="blurb"></p>
   </div>
+  <main class="main">
+    <div class="panel legend" id="legend"></div>
+    <div class="side" id="mapSide">
+      <div class="panel stats">
+        <div><b id="sAcc">–</b><span class="lbl">Correct when answering</span></div>
+        <div><b id="sCov">–</b><span class="lbl">Answered</span></div>
+        <div><b id="sNow">–</b><span class="lbl">Correct right now</span></div>
+        <div><b id="sFault">–</b><span class="lbl">Devices in fault</span></div>
+      </div>
+      <aside class="panel" id="panel" hidden aria-live="polite"></aside>
+    </div>
+    <section id="devView" hidden aria-label="Devices">
+      <nav class="panel" id="devTabs" role="tablist" aria-label="Device" aria-orientation="vertical"></nav>
+      <div class="panel" id="devDetail" role="tabpanel"></div>
+    </section>
+    <section id="mcuView" hidden aria-label="STM32 board">
+      <div class="panel" id="mcuBar">
+        <label>Device <select id="mcuDev"></select></label>
+        <label>Firmware <select id="mcuArchSel"><option value="A4" selected>Optimised (tickless, DMA)</option><option value="A0">Starter (HAL, 1 ms tick)</option></select></label>
+        <label>Board speed <select id="mcuRateSel"><option value="1">real time</option><option value="0.1" selected>1/10 slow motion</option><option value="0.01">1/100 slow motion</option></select></label>
+      </div>
+      <aside class="panel" id="mcuPanel"></aside>
+    </section>
+    <section id="buildView" hidden aria-label="Build guide">
+      <nav class="panel" id="buildNav" aria-label="Build guide sections"></nav>
+      <article class="panel" id="buildDoc"></article>
+    </section>
+  </main>
+  <div class="panel" id="tour" hidden></div>
+  <footer class="panel timeline">
+    <button class="btn primary" id="play">Play</button>
+    <select id="speed" aria-label="Playback speed">
+      <option value="120">120×</option><option value="300" selected>300×</option><option value="900">900×</option>
+    </select>
+    <label class="btn"><input type="checkbox" id="truthRing" checked> Truth rings</label>
+    <label class="btn" title="Show the 10-minute dominant source instead of the instant label"><input type="checkbox" id="mode10" checked> 10-min source</label>
+    <div class="track">
+      <canvas id="strip" aria-label="Array outcome over time; click to jump"></canvas>
+      <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Time">
+    </div>
+    <div class="tl-key"><span><i style="background:var(--good)"></i>correct</span><span><i style="background:var(--bad)"></i>wrong</span>
+      <span><i style="background:var(--neutral)"></i>uncertain</span><span><i style="background:var(--off)"></i>fault</span></div>
+  </footer>
 </div>
-<div class="panel legend" id="legend"></div>
-<aside class="panel" id="panel" hidden aria-live="polite"></aside>
-<section id="devView" hidden aria-label="Devices">
-  <nav class="panel" id="devTabs" role="tablist" aria-label="Device" aria-orientation="vertical"></nav>
-  <div class="panel" id="devDetail" role="tabpanel"></div>
-</section>
+<div id="about" hidden><div class="box" id="aboutBox" role="dialog" aria-label="About this simulation"></div></div>
 <div class="panel" id="tip" hidden></div>
-<div class="panel timeline">
-  <button class="btn primary" id="play">Play</button>
-  <select id="speed" aria-label="Playback speed">
-    <option value="120">120× </option><option value="300" selected>300×</option><option value="900">900×</option>
-  </select>
-  <label class="btn" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="truthRing" checked> Truth rings</label>
-  <div class="track">
-    <canvas id="strip" aria-label="Array outcome over time; click to jump"></canvas>
-    <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Time">
-  </div>
-  <div class="tl-key"><span><i style="background:var(--good)"></i>correct</span><span><i style="background:var(--bad)"></i>wrong</span>
-    <span><i style="background:var(--neutral)"></i>uncertain</span><span><i style="background:var(--off)"></i>fault</span></div>
-</div>
 
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script>window.AREA = /*__DATA__*/null;</script>
@@ -366,10 +482,10 @@ function weatherAt(t) {
           temp: w.temp[i] + (w.temp[j] - w.temp[i]) * f, rh: w.rh[i] + (w.rh[j] - w.rh[i]) * f};
 }
 function outcome(dv, s) {             // 'good' | 'bad' | 'unc' | 'off' | 'na'
-  const p = dv.pred[s], t = dv.truth[s];
+  const p = shownLabel(dv, s), t = shownTruth(dv, s);
   if (p === 6 || p === 7) return 'off';
   if (!ANSWER.has(t)) return 'na';
-  if (p === 5) return 'unc';
+  if (p === 5 || p === 8) return 'unc';
   return p === t ? 'good' : 'bad';
 }
 
@@ -381,7 +497,7 @@ D.cases.forEach((c, i) => {
 });
 $('legend').innerHTML = ['vehicle_exhaust','biomass_burning','dust','industrial','background','uncertain','sensor_fault']
   .map(c => `<div><span class="sw" style="background:${COLOR[c]}"></span>${NICE[c]}</div>`).join('') +
-  `<div class="note">Beacon = what the device reports. Ground ring = what is really there (dominant source). Plume colour = source type; plume motion is sped up for visibility.</div>`;
+  `<div class="note">Beacon = what the device reports (10-minute dominant source; untick “10-min source” for the instant label). Ground ring = what is really there over the same period. Plume colour = source type; plume motion is sped up for visibility.</div>`;
 $('play').onclick = () => { playing = !playing; $('play').textContent = playing ? 'Pause' : 'Play'; };
 $('scrub').oninput = e => { tSim = e.target.value / 1000 * caseDur(); };
 $('strip').onclick = e => { const r = e.target.getBoundingClientRect(); tSim = (e.clientX - r.left) / r.width * caseDur(); };
@@ -434,18 +550,18 @@ function nearest(d) {
 }
 function renderPanel(s) {
   if (selected === null) return;
-  const v = devs[selected], dv = C.devices[selected], p = CLS[dv.pred[s]], t = CLS[dv.truth[s]];
+  const v = devs[selected], dv = C.devices[selected], p = CLS[shownLabel(dv, s)], t = CLS[shownTruth(dv, s)];
   const fault = C.faults[v.d.id];
   const o = outcome(dv, s);
   const verdict = {good: '<span style="color:var(--good)">correct</span>', bad: '<span style="color:var(--bad)">wrong</span>',
     unc: 'abstained', off: 'no output', na: 'not scored (no single dominant source)'}[o];
   $('panel').innerHTML = `<h2>${v.d.id} <button class="x" id="closeP" aria-label="Close">×</button></h2>
     <div class="src">Prototype unit ${v.d.unit} · ${v.d.x} m E, ${v.d.y} m N</div>
-    <div class="row"><span class="lbl">Reports</span><span class="pill"><span class="sw" style="background:${COLOR[p]}"></span>${NICE[p]}</span></div>
+    <div class="row"><span class="lbl">Reports${mode10 ? " (10 min)" : ""}</span><span class="pill"><span class="sw" style="background:${COLOR[p]}"></span>${NICE[p]}</span></div>
     <div class="row"><span class="lbl">Really there</span><span class="pill"><span class="sw" style="background:${COLOR[t]}"></span>${NICE[t]}</span></div>
     <div class="row"><span class="lbl">Verdict</span><span>${verdict}</span></div>
     <div class="row" style="display:block"><span class="lbl">Confidence ${dv.conf[s]}% (gate ${Math.round(D.conf_thr * 100)}%)</span><div class="bar"><i style="width:${dv.conf[s]}%"></i></div></div>
-    <div class="row"><span class="lbl">PM2.5 sensor / true</span><span class="val">${dv.pm[s]} / ${dv.pm_true[s]} µg/m³</span></div>
+    <div class="row"><span class="lbl">PM2.5, corrected 5-min</span><span class="val">${pmText(dv, s)}</span></div><div class="row"><span class="lbl">PM2.5 raw sensor / true</span><span class="val">${dv.pm[s] >= 0 ? dv.pm[s] : "–"} / ${dv.pm_true[s]} µg/m³</span></div>
     <div class="row"><span class="lbl">Largest local share</span><span class="val">${dv.share[s]}%</span></div>
     ${fault ? `<div class="row"><span class="lbl">Injected fault</span><span class="fault">${Object.keys(fault)[0].replace(/_/g, ' ')}</span></div>` : ''}
     <div class="lbl" style="margin-top:10px">Whole case: reported (top) vs true (bottom)</div>
@@ -453,12 +569,12 @@ function renderPanel(s) {
     <div class="lbl" style="margin-top:8px">Nearest sources</div>
     ${nearest(v.d).map(n => `<div class="src">${n.s.label}: ${Math.round(n.dist)} m ${compassName(n.brg)}</div>`).join('')}
     <button class="btn openDev" id="openDev">Open ${v.d.id} in Devices view</button>`;
-  $('openDev').onclick = () => { devSel = selected; setView(true); };
+  $('openDev').onclick = () => { devSel = selected; setView('dev'); };
   $('closeP').onclick = () => { selected = null; $('panel').hidden = true; };
   const cv = $('hist'), r = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio, 2);
   cv.width = r.width * dpr; cv.height = r.height * dpr; const g = cv.getContext('2d'), n = nSteps(), bw = cv.width / n, h = cv.height / 2 - 2;
-  for (let k = 0; k < n; k++) { g.fillStyle = COLOR[CLS[dv.pred[k]]]; g.fillRect(k * bw, 0, Math.ceil(bw), h);
-    g.fillStyle = COLOR[CLS[dv.truth[k]]]; g.fillRect(k * bw, h + 4, Math.ceil(bw), h); }
+  for (let k = 0; k < n; k++) { g.fillStyle = COLOR[CLS[shownLabel(dv, k)]]; g.fillRect(k * bw, 0, Math.ceil(bw), h);
+    g.fillStyle = COLOR[CLS[shownTruth(dv, k)]]; g.fillRect(k * bw, h + 4, Math.ceil(bw), h); }
   g.fillStyle = '#1d2321'; g.fillRect(s * bw - dpr, 0, 2 * dpr, cv.height);
 }
 
@@ -469,26 +585,34 @@ function loadCase(i) {
   $('blurb').textContent = C.blurb;
   drawStrip(); lastStep = -1; lastPanel = -1; devDrawnFor = ''; layoutDev();
   if (devMode) renderDev(0);
+  if (mcuMode) mcuEnter();
   try { localStorage.setItem('polso-case', C.id); } catch (e) {}
 }
 
 // ---------------------------------------------------------------- devices view (one tab per device)
 let devMode = false, devSel = 0, devDrawnFor = '';
-function setView(dev) {
-  devMode = dev;
-  document.body.classList.toggle('dev-mode', dev);
-  $('devView').hidden = !dev;
-  $('vMap').setAttribute('aria-selected', String(!dev)); $('vDev').setAttribute('aria-selected', String(dev));
-  layoutDev(); devDrawnFor = ''; lastStep = -1;
-  if (dev && C) renderDev(stepAt(tSim));
-  try { localStorage.setItem('polso-view', dev ? 'dev' : 'map'); } catch (e) {}
+let viewMode = 'map', buildMode = false;
+function setView(mode) {                    // 'map' | 'dev' | 'mcu' | 'build'
+  if (mode === true) mode = 'dev';
+  if (mode === false || !['map', 'dev', 'mcu', 'build'].includes(mode)) mode = 'map';
+  viewMode = mode; devMode = mode === 'dev'; mcuMode = mode === 'mcu'; buildMode = mode === 'build';
+  document.body.dataset.view = mode;
+  $('devView').hidden = !devMode; $('mcuView').hidden = !mcuMode; $('buildView').hidden = !buildMode;
+  for (const [id, m] of [['vMap', 'map'], ['vDev', 'dev'], ['vMcu', 'mcu'], ['vBuild', 'build']]) $(id).setAttribute('aria-selected', String(mode === m));
+  controls.enabled = mode === 'map'; mCtl.enabled = mcuMode;
+  $('tip').hidden = true; renderer.domElement.style.cursor = '';
+  devDrawnFor = ''; lastStep = -1; lastPanel = -1;
+  if (devMode && C) renderDev(stepAt(tSim));
+  if (mcuMode && C) mcuEnter();
+  if (buildMode) buildEnter();
+  resize();
+  try { localStorage.setItem('polso-view', mode); } catch (e) {}
 }
-$('vMap').onclick = () => setView(false);
-$('vDev').onclick = () => setView(true);
-function layoutDev() {
-  const b = document.querySelector('.brand').getBoundingClientRect();
-  document.documentElement.style.setProperty('--topH', (b.bottom + 12) + 'px');
-}
+$('vMap').onclick = () => setView('map');
+$('vDev').onclick = () => setView('dev');
+$('vMcu').onclick = () => setView('mcu');
+$('vBuild').onclick = () => setView('build');
+function layoutDev() {}                     // layout is pure CSS grid now; kept so older calls stay harmless
 function buildDevTabs() {
   $('devTabs').innerHTML = devs.map((v, k) => `<button role="tab" id="dtab-${k}" aria-selected="${k === devSel}" tabindex="${k === devSel ? 0 : -1}">
     <span class="sw" id="ddot-${k}"></span><b>${v.d.id}</b><span class="l" id="dlab-${k}"></span><em id="dmark-${k}" style="font-style:normal"></em></button>`).join('');
@@ -524,7 +648,7 @@ function devDetailHTML(k) {
     <figure class="chart"><figcaption>Model confidence<span id="r2"></span></figcaption><canvas id="c2" height="120"></canvas>
       <div class="ck"><span><i style="background:#1d2321"></i>confidence of the top class</span><span><i style="background:#c62f2f"></i>gate ${Math.round(D.conf_thr * 100)}% (below = uncertain)</span></div></figure>
     <figure class="chart"><figcaption>PM2.5, sensor vs true<span id="r3"></span></figcaption><canvas id="c3" height="140"></canvas>
-      <div class="ck"><span><i style="background:#2a78d6"></i>PMS7003 reading</span><span><i style="background:#8b948f"></i>true PM2.5 at the device</span></div></figure>
+      <div class="ck"><span><i style="background:#2a78d6"></i>PMS7003 raw</span><span><i style="background:#17643f"></i>corrected, 5-min (shaded: band holding ~68 % of true values)</span><span><i style="background:#8b948f"></i>true PM2.5 at the device</span></div></figure>
     <div class="two"><figure class="chart"><figcaption>Largest local source share<span id="r4"></span></figcaption><canvas id="c4" height="110"></canvas>
       <div class="ck"><span><i style="background:#4a3aa7"></i>share of PM2.5 from the biggest local source</span><span><i style="background:#b4b3ad"></i>40 % = counts as dominant</span></div></figure>
       <figure class="chart"><figcaption>Location and wind</figcaption><canvas id="miniMap" width="440" height="440"></canvas>
@@ -553,7 +677,8 @@ function axes(g, w, h, ymax, unit) {
 }
 function line(g, w, h, data, ymax, color, width) {
   g.strokeStyle = color; g.lineWidth = width; g.lineJoin = 'round'; g.beginPath();
-  data.forEach((v, s) => { const x = X(s, w), y = 4 + (h - PADB - 4) * (1 - Math.min(v, ymax) / ymax); s ? g.lineTo(x, y) : g.moveTo(x, y); });
+  let pen = false;
+  data.forEach((v, s) => { if (!(v >= 0)) { pen = false; return; } const x = X(s, w), y = 4 + (h - PADB - 4) * (1 - Math.min(v, ymax) / ymax); pen ? g.lineTo(x, y) : g.moveTo(x, y); pen = true; });
   g.stroke();
 }
 function cursor(g, w, h, s) { g.fillStyle = '#1d2321'; g.fillRect(X(s, w) - 1, 0, 2, h - PADB + 2); }
@@ -565,8 +690,8 @@ function drawDevCharts(k, s) {
   g.font = '10px IBM Plex Sans, sans-serif'; g.fillStyle = '#8b948f'; g.textAlign = 'right';
   g.fillText('device', PADL - 5, hh / 2 + 3); g.fillText('truth', PADL - 5, hh + 4 + hh / 2 + 3);
   for (let i = 0; i < n; i++) {
-    g.fillStyle = COLOR[CLS[dv.pred[i]]]; g.fillRect(PADL + i * bw, 0, Math.ceil(bw), hh);
-    g.fillStyle = COLOR[CLS[dv.truth[i]]]; g.fillRect(PADL + i * bw, hh + 4, Math.ceil(bw), hh);
+    g.fillStyle = COLOR[CLS[shownLabel(dv, i)]]; g.fillRect(PADL + i * bw, 0, Math.ceil(bw), hh);
+    g.fillStyle = COLOR[CLS[shownTruth(dv, i)]]; g.fillRect(PADL + i * bw, hh + 4, Math.ceil(bw), hh);
   }
   hourTicks(g, w, h); cursor(g, w, h, s);
   ({g, w, h} = setupCanvas($('c2'))); axes(g, w, h, 100, '%');
@@ -574,7 +699,14 @@ function drawDevCharts(k, s) {
   line(g, w, h, dv.conf, 100, '#1d2321', 1.4); cursor(g, w, h, s);
   const ymax = Math.max(20, ...dv.pm, ...dv.pm_true) * 1.08;
   ({g, w, h} = setupCanvas($('c3'))); axes(g, w, h, ymax, '');
-  line(g, w, h, dv.pm_true, ymax, '#8b948f', 2); line(g, w, h, dv.pm, ymax, '#2a78d6', 1.4); cursor(g, w, h, s);
+  if (dv.pm5) {
+    g.fillStyle = 'rgba(27,175,122,0.20)';
+    const bwp = (w - PADL) / nSteps(), Y = v => 4 + (h - PADB - 4) * (1 - Math.min(v, ymax) / ymax);
+    for (let i = 0; i < nSteps(); i++) if (dv.pm5_lo[i] >= 0) g.fillRect(X(i, w), Y(dv.pm5_hi[i]), Math.max(1, bwp), Y(dv.pm5_lo[i]) - Y(dv.pm5_hi[i]));
+  }
+  line(g, w, h, dv.pm_true, ymax, '#8b948f', 2); line(g, w, h, dv.pm, ymax, '#2a78d6', 1);
+  if (dv.pm5) line(g, w, h, dv.pm5, ymax, '#17643f', 1.8);
+  cursor(g, w, h, s);
   ({g, w, h} = setupCanvas($('c4'))); axes(g, w, h, 100, '%');
   dashed(g, w, 4 + (h - PADB - 4) * 0.6, '#b4b3ad');
   line(g, w, h, dv.share, 100, '#4a3aa7', 1.6); cursor(g, w, h, s);
@@ -595,19 +727,19 @@ function drawDevCharts(k, s) {
   m.beginPath(); m.moveTo(0, -26); m.lineTo(-9, -11); m.lineTo(9, -11); m.fill(); m.restore();
 }
 function readout(k, s) {
-  const dv = C.devices[k], p = CLS[dv.pred[s]], t = CLS[dv.truth[s]], o = outcome(dv, s);
+  const dv = C.devices[k], p = CLS[shownLabel(dv, s)], t = CLS[shownTruth(dv, s)], o = outcome(dv, s);
   const verdict = {good: '<span style="color:var(--good)">correct</span>', bad: '<span style="color:var(--bad)">wrong</span>',
     unc: 'abstained (uncertain)', off: 'no output', na: 'not scored (no single dominant source)'}[o];
   $('dNow').innerHTML = `<div class="row"><span class="lbl">At ${hhmm(tSim)} reports</span><span class="pill"><span class="sw" style="background:${COLOR[p]}"></span>${NICE[p]} · ${dv.conf[s]}%</span></div>
     <div class="row"><span class="lbl">Really there</span><span class="pill"><span class="sw" style="background:${COLOR[t]}"></span>${NICE[t]}</span></div>
     <div class="row"><span class="lbl">Verdict</span><span>${verdict}</span></div>
-    <div class="row"><span class="lbl">PM2.5 sensor / true</span><span class="val">${dv.pm[s]} / ${dv.pm_true[s]} µg/m³</span></div>`;
+    <div class="row"><span class="lbl">PM2.5, corrected 5-min</span><span class="val">${pmText(dv, s)}</span></div><div class="row"><span class="lbl">PM2.5 raw sensor / true</span><span class="val">${dv.pm[s] >= 0 ? dv.pm[s] : "–"} / ${dv.pm_true[s]} µg/m³</span></div>`;
   $('r1').textContent = `${NICE[p]} / ${NICE[t]}`; $('r2').textContent = `${dv.conf[s]}%`;
   $('r3').textContent = `${dv.pm[s]} / ${dv.pm_true[s]} µg/m³`; $('r4').textContent = `${dv.share[s]}%`;
 }
 function updateDevTabs(s) {
   devs.forEach((v, k) => {
-    const dv = C.devices[k], o = outcome(dv, s), p = CLS[dv.pred[s]], b = $('dtab-' + k);
+    const dv = C.devices[k], o = outcome(dv, s), p = CLS[shownLabel(dv, s)], b = $('dtab-' + k);
     b.setAttribute('aria-selected', String(k === devSel)); b.tabIndex = k === devSel ? 0 : -1;
     $('ddot-' + k).style.background = COLOR[p]; $('dlab-' + k).textContent = NICE[p];
     $('dmark-' + k).innerHTML = o === 'good' ? '<span style="color:var(--good)">✓</span>' : o === 'bad' ? '<span style="color:var(--bad)">✗</span>'
@@ -624,7 +756,7 @@ function renderDev(s) {
       cv.onclick = e => { tSim = at(e) * HOP + W - 1; };
       cv.onmousemove = e => {
         const i = at(e), dv = C.devices[devSel], tip = $('tip');
-        tip.innerHTML = `<b>${hhmm(i * HOP + W - 1)}</b> · reports <b>${NICE[CLS[dv.pred[i]]]}</b> (${dv.conf[i]}%)<br>Really: ${NICE[CLS[dv.truth[i]]]}<br>PM2.5 sensor ${dv.pm[i]} / true ${dv.pm_true[i]} µg/m³ · local share ${dv.share[i]}%<br><span class="src">Click to jump here</span>`;
+        tip.innerHTML = `<b>${hhmm(i * HOP + W - 1)}</b> · reports <b>${NICE[CLS[shownLabel(dv, i)]]}</b> (${dv.conf[i]}%)<br>Really: ${NICE[CLS[shownTruth(dv, i)]]}<br>PM2.5 corrected ${pmText(dv, i)} · raw ${dv.pm[i]} · true ${dv.pm_true[i]} µg/m³ · local share ${dv.share[i]}%<br><span class="src">Click to jump here</span>`;
         tip.style.visibility = 'visible'; tip.hidden = false;
         tip.style.left = Math.min(e.clientX + 14, innerWidth - 250) + 'px'; tip.style.top = (e.clientY + 14) + 'px';
       };
@@ -633,6 +765,398 @@ function renderDev(s) {
   }
   updateDevTabs(s); readout(devSel, s); drawDevCharts(devSel, s);
 }
+
+// ---------------------------------------------------------------- 10-minute view, about & accuracy, guided tour
+let mode10 = true;
+function truth10Of(dv) {                    // the same 10-minute majority rule the firmware uses, applied to the truth
+  if (dv._t10) return dv._t10;
+  const t = dv.truth, out = new Array(t.length), order = [4, 1, 2, 3, 0];
+  for (let w = 0; w < t.length; w++) {
+    const cnt = [0, 0, 0, 0, 0]; let ans = 0;
+    for (let j = Math.max(0, w - 19); j <= w; j++) if (t[j] <= 4) { cnt[t[j]]++; ans++; }
+    if (ans < 6) { out[w] = 8; continue; }
+    let best = order[0];
+    for (const c of order) if (cnt[c] > cnt[best]) best = c;
+    out[w] = 2 * cnt[best] >= ans ? best : 8;
+  }
+  return (dv._t10 = out);
+}
+const shownLabel = (dv, s) => (mode10 && dv.label10) ? dv.label10[s] : dv.pred[s];
+const shownTruth = (dv, s) => mode10 ? truth10Of(dv)[s] : dv.truth[s];
+const pmText = (dv, s) => (dv.pm5 && dv.pm5[s] >= 0) ? `${dv.pm5[s]} µg/m³ (${dv.pm5_lo[s]}–${dv.pm5_hi[s]})` : '–';
+$('mode10').onchange = () => { mode10 = $('mode10').checked; drawStrip(); lastStep = -1; lastPanel = -1; devDrawnFor = ''; };
+
+const pc = x => Number.isFinite(x) ? Math.round(100 * x) + '%' : '–';
+const f1 = x => Number.isFinite(x) ? x.toFixed(1) : '–';
+function openAbout() {
+  const A = D.accuracy;
+  const row = (name, a) => `<tr><td>${name}</td><td class="n">${pc(a.instant_correct)} / ${pc(a.instant_answered)}</td><td class="n">${pc(a.ten_correct)} / ${pc(a.ten_answered)}</td>
+    <td class="n">${f1(a.changes_per_h)} · ${f1(a.changes10_per_h)} · ${f1(a.truth_changes_per_h)}</td><td class="n">${pc(a.pm_raw_med)} → ${pc(a.pm5_med)}</td>
+    <td class="n">${pc(a.pm_raw_p90)} → ${pc(a.pm5_p90)}</td><td class="n">${pc(a.band_coverage)}</td></tr>`;
+  $('aboutBox').innerHTML = `<h2>About this simulation <button class="x" id="aboutX" aria-label="Close">×</button></h2>
+  <p>Every value on screen comes from running the PolSo firmware on simulated air. The simulation models the physics of both sensors and the
+  firmware exactly as it would run on the STM32. <b>Nothing here is measured on real hardware yet</b>, so treat these numbers as what the design
+  can achieve under the model's assumptions. Expect real accuracy to be lower until the device is checked against reference instruments.</p>
+  <h3>Accuracy measured in this simulation</h3>
+  <div class="scroll"><table><tr><th>Case</th><th>Source right when answering / share answered (instant)</th><th>Same, 10-min source</th>
+  <th>Source changes per hour: instant · 10-min · real air</th><th>PM2.5 median error: raw → corrected 5-min</th><th>90th percentile error</th><th>True PM inside the band (target 68 %)</th></tr>
+  ${D.cases.map(c => row(c.name, c.accuracy)).join('')}${row('<b>All cases</b>', A)}</table></div>
+  <p class="src">The 10-minute source is scored against the true dominant source over the same 10 minutes. The PM2.5 band is set on held-out data
+  so that about 68 % of true values should fall inside it; the last column shows whether that holds here.</p>
+  ${D.pm_cal_selection ? `<h3>How the PM2.5 correction was chosen</h3>
+  <p>The device corrects the PMS7003 reading with its own humidity measurement and the source it has just detected. Candidate corrections were compared on
+  separate field days that are not part of this map: ${Object.entries(D.pm_cal_selection.candidates).map(([k, v]) => `${k.replace(/^[ABC] /, '')}: median error ${pc(v.median)}`).join('; ')}.
+  The best one was kept, and its band was then widened ${D.pm_cal_selection.band_scale.toFixed(2)}x so that 68 % of true values fall inside it on those days.
+  This map is the final test and played no part in any of these choices. Here the correction cuts the worst errors (90th percentile ${pc(A.pm_raw_p90)} → ${pc(A.pm5_p90)}),
+  but its median error is ${pc(A.pm5_med)} against ${pc(A.pm_raw_med)} for the raw reading, and its band holds only ${pc(A.band_coverage)} of true values.
+  A correction learned in one place does not fully carry over to another. That is why each real site needs a short co-location with a reference monitor before PM2.5 numbers can be called accurate.</p>` : ''}
+  <h3>What is modelled</h3><ul class="tight">
+  <li><b>Air:</b> weather, regional haze, plumes from roads, stacks, fires and construction that drift with the wind.</li>
+  <li><b>PMS7003:</b> laser counting with real size limits, swelling of particles in humid air (the sensor warms its sample a little),
+  counting noise, poor response to coarse dust, unit-to-unit spread, the real 32-byte UART frames.</li>
+  <li><b>BME688:</b> metal-oxide chemistry with a 10-step heater scan, strong humidity sensitivity, slow drift and unit spread.</li>
+  <li><b>Firmware:</b> the same C code as for the board (checked identical to the simulation on every window). That includes the 60 s windows, 25 features,
+  the int8 neural network, the confidence gate, the 10-minute source and the PM2.5 correction.</li></ul>
+  <h3>Estimated, not measured</h3><ul class="tight"><li>STM32 currents, cycle counts and memory use, SD-card timing, battery life (STM32 tab: tagged EST / MODEL).</li>
+  <li>The sensor-physics parameters, which come from datasheets and published studies. They need re-fitting with the real sensors.</li></ul>
+  <h3>Limits of the hardware that no software can remove</h3><ul class="tight">
+  <li>The PMS7003 cannot see particles smaller than about 0.3 µm, which is most fresh vehicle soot. Traffic PM2.5 therefore carries the widest band.</li>
+  <li>It under-counts coarse dust, so dust storms read low.</li>
+  <li>The BME688 is not selective: it says something reacted, not which gas. Sources are told apart only through the combination with particle size.</li>
+  <li>Sources the model never saw (cooking, incense, trash burning) are often given the nearest known label.</li></ul>
+  <h3>Not modelled</h3><ul class="tight"><li>Rain, real enclosure airflow, wildlife and vandalism, years of ageing, real calibration drift.</li></ul>`;
+  $('about').hidden = false;
+  $('aboutX').onclick = () => { $('about').hidden = true; };
+}
+$('aboutBtn').onclick = openAbout;
+$('about').onclick = e => { if (e.target.id === 'about') $('about').hidden = true; };
+
+// ---- guided tour (for presenting) ----
+function setPlay(b) { playing = b; $('play').textContent = b ? 'Pause' : 'Play'; }
+function busiest(caseIdx, cls) {
+  const cs = D.cases[caseIdx].devices; let best = 0, bv = -1;
+  cs.forEach((dv, k) => { const v = (dv.label10 || dv.pred).filter(x => x === cls).length; if (v > bv) { bv = v; best = k; } });
+  return best;
+}
+const TOUR = [
+  {t: 'What you are looking at', p: 'A 2 × 2 km town with 16 PolSo devices. Each one is an STM32 NUCLEO-G474RE with a PMS7003 particle sensor and a BME688 gas sensor. ' +
+     'The air, the sensors and the device firmware are all simulated, and the firmware is the same code that will run on the board.',
+   go: () => { setView('map'); loadCase(0); tSim = 2 * 3600; setPlay(true); }},
+  {t: 'Reading the map', p: 'The glowing ball on each device is what it reports: the main pollution source over the last 10 minutes. The ring on the ground is what is really there. ' +
+     '✓ means right, ✗ wrong, ? not sure, ⚠ sensor fault. Smoke and dust plumes are coloured by source.', go: () => {}},
+  {t: 'Crop-burning season', p: 'A westerly wind carries stubble-fire smoke over the town. Watch the devices downwind turn orange (biomass burning) while the others stay green (clean background).',
+   go: () => { loadCase(2); tSim = 1.6 * 3600; setPlay(true); }},
+  {t: 'One device in detail', p: 'The Devices tab shows one device over the whole case: what it reported against reality, how confident it was, and its PM2.5. That last chart has the raw sensor, the corrected 5-minute value with its band, and the true value.',
+   go: () => { devSel = busiest(2, 1); setView('dev'); }},
+  {t: 'Inside the device', p: 'The STM32 tab is the board itself. Moving dots are data on the wires: particle-sensor frames, GPS, I²C reads of the gas sensor, SD-card writes. ' +
+     'The chip colour is its power state. The panel shows live readings, the 25 features, the neural-network output and memory, each tagged as simulated (SIM), modelled (MODEL) or estimated (EST).',
+   go: () => { setView('mcu'); mcuArch = 'A4'; $('mcuArchSel').value = 'A4'; mcuRate = 0.1; $('mcuRateSel').value = '0.1'; }},
+  {t: 'Firmware design matters', p: () => `With a typical starter firmware the core is woken every millisecond and never reaches deep sleep. It averages ${M32 ? M32.archs.A0.avg_ma[1].toFixed(1) : '8'} mA, against ${M32 ? M32.archs.A4.avg_ma[1].toFixed(1) : '0.9'} mA with the optimised design. Same algorithm, same answers.`,
+   go: () => { mcuArch = 'A0'; $('mcuArchSel').value = 'A0'; }},
+  {t: 'When things break', p: 'In this case four devices develop faults. P06 loses its particle sensor at 11:00 and reports a sensor fault (⚠) instead of guessing. P10’s fan stalls; that one the firmware cannot detect yet, and it is listed as a known gap.',
+   go: () => { setView('map'); loadCase(5); tSim = 3.3 * 3600; setPlay(true); }},
+  {t: 'How accurate is it?', p: () => `Across all cases the 10-minute source was right ${pc(D.accuracy.ten_correct)} of the time when it answered (${pc(D.accuracy.ten_answered)} of the time). The corrected 5-minute PM2.5 had a median error of ${pc(D.accuracy.pm5_med)} (raw sensor: ${pc(D.accuracy.pm_raw_med)}). These are simulation results; the next step is checking them against reference instruments. The full table is under About &amp; accuracy.`,
+   go: () => { setView('map'); }},
+  {t: 'Building the real device', p: 'The Build tab is the construction sheet: parts, wiring and pins, clock and peripheral settings, sensor commands, every firmware constant, the classifier, the PM2.5 correction, the power inputs, the assumptions to measure first, and the steps to build, flash and verify. It is generated from the same files the simulation ran on.',
+   go: () => { setView('build'); }},
+];
+let tourI = -1;
+function tourShow(i) {
+  if (i >= TOUR.length) return tourEnd();
+  tourI = Math.max(0, i);
+  const st = TOUR[tourI];
+  $('about').hidden = true;
+  st.go();
+  $('tour').innerHTML = `<h3>${tourI + 1} / ${TOUR.length} · ${st.t}</h3><p>${typeof st.p === 'function' ? st.p() : st.p}</p>
+    <div class="row2"><button class="btn" id="tPrev" ${tourI ? '' : 'disabled'}>Back</button><button class="btn" id="tEnd">End tour</button>
+    <button class="btn primary" id="tNext">${tourI === TOUR.length - 1 ? 'Finish' : 'Next'}</button></div>`;
+  $('tour').hidden = false;
+  $('tPrev').onclick = () => tourShow(tourI - 1);
+  $('tNext').onclick = () => tourShow(tourI + 1);
+  $('tEnd').onclick = tourEnd;
+}
+function tourEnd() { $('tour').hidden = true; tourI = -1; }
+$('tourBtn').onclick = () => tourShow(0);
+addEventListener('keydown', e => {
+  if (tourI < 0 || e.target.closest('input,select,textarea,[role="tablist"]')) return;
+  if (e.key === 'ArrowRight') tourShow(tourI + 1);
+  else if (e.key === 'ArrowLeft') tourShow(tourI - 1);
+  else if (e.key === 'Escape') tourEnd();
+});
+
+// ---------------------------------------------------------------- STM32 view: the device's own hardware, live
+// What is shown and where it comes from:
+//   board activity (bus transfers, interrupts, power state, current) - the schedule model's 30 s firmware cycle
+//     (stm32_twin/schedule.py) replayed at real time or slow motion; short events are stretched to be visible
+//   sensor readings, features, probabilities, labels, corrected PM2.5 - the firmware twin's output for the selected
+//     device at the selected moment of the scenario (one value per 30 s window)
+//   cycles, memory, currents, battery - operation-count model and spec.py estimates (ranges shown)
+const M32 = D.stm32;
+let mcuMode = false, mcuArch = 'A4', mcuRate = 0.1, mcuT = 0, mcuLastPanel = 0;
+const mScene = new THREE.Scene();
+mScene.background = new THREE.Color('#e6e9e5');
+const mCam = new THREE.PerspectiveCamera(36, 1, 1, 4000);
+mCam.position.set(10, 235, 260);
+const mCtl = new OrbitControls(mCam, renderer.domElement);
+mCtl.enabled = false; mCtl.enableDamping = true; mCtl.target.set(42, 0, 18); mCtl.minDistance = 90; mCtl.maxDistance = 700;
+mCtl.maxPolarAngle = 1.45;
+mScene.add(new THREE.HemisphereLight(0xffffff, 0x8f998f, 1.05));
+{ const l = new THREE.DirectionalLight(0xffffff, 1.5); l.position.set(-120, 260, 160); l.castShadow = true;
+  Object.assign(l.shadow.camera, {left: -220, right: 220, top: 220, bottom: -220, near: 10, far: 800}); l.shadow.mapSize.set(2048, 2048); mScene.add(l); }
+const MV = (x, z, y = 0) => new THREE.Vector3(x, y, z);       // board millimetres: x right, z towards viewer, y up
+function mbox(w, d, h, x, z, y0, color, opt = {}) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial(Object.assign({color, roughness: .7, metalness: 0}, opt)));
+  m.position.copy(MV(x, z, y0 + h / 2)); m.castShadow = true; m.receiveShadow = true; mScene.add(m); return m;
+}
+{ const g = new THREE.Mesh(new THREE.PlaneGeometry(900, 700), new THREE.MeshStandardMaterial({color: '#dfe3df', roughness: 1}));
+  g.rotation.x = -Math.PI / 2; g.receiveShadow = true; mScene.add(g); }
+
+// NUCLEO-64 board: 70 x 82.5 mm, ST-LINK section at the back, STM32G474RE (LQFP64) in the middle
+mbox(70, 82.5, 1.6, 0, 0, 4, '#f4f4f0');
+mbox(70, 1.2, 1.7, 0, -21, 4, '#c9ccc8');                     // break line between ST-LINK and target
+mbox(14, 8, 3.2, 0, -38, 5.6, '#a8acaa', {metalness: .6, roughness: .35});   // USB connector
+mbox(7, 7, 1.4, -12, -30, 5.6, '#2b2e2d');                    // ST-LINK MCU
+const mcuChip = mbox(10, 10, 1.6, 0, 6, 5.6, '#1d2321', {emissive: '#1d2321', emissiveIntensity: .05});
+for (let i = 0; i < 16; i++) for (const [dx, dz, w, d] of [[-5.8, -4.5 + i * .6, .9, .25], [5.8, -4.5 + i * .6, .9, .25], [-4.5 + i * .6, -5.8, .25, .9], [-4.5 + i * .6, 5.8, .25, .9]])
+  mbox(w, d, .3, dx, 6 + dz, 5.6, '#b9bdbb', {metalness: .7, roughness: .3});
+for (const sx of [-31.5, 31.5]) { mbox(5, 48, 8.5, sx, 14, 5.6, '#202322'); }            // morpho headers
+for (const sx of [-24, 24]) { mbox(2.6, 40, 8.5, sx, 18, 5.6, '#2b2e2d'); }              // Arduino headers
+mbox(6, 6, 2.2, 22, -10, 5.6, '#2a78d6', {roughness: .4});                               // B1 user button
+mbox(6, 6, 2.2, 22, 34, 5.6, '#2b2e2d');                                                  // B2 reset
+const ld2 = mbox(2, 1.4, 1, -6, -12, 5.6, '#7fd28c', {emissive: '#2bd14b', emissiveIntensity: 0});  // LD2 (green, PA5)
+mbox(2, 1.4, 1, 10, -27, 5.6, '#e34948', {emissive: '#e34948', emissiveIntensity: .6});            // power LED
+
+// sensors and peripherals
+const pms = new THREE.Group(); mScene.add(pms);
+{ const b = mbox(48, 37, 12, -105, -18, 0, '#b8bcbb', {metalness: .55, roughness: .35}); pms.add(b); }
+const fan = new THREE.Group(); fan.position.copy(MV(-112, -18, 12.3)); mScene.add(fan);
+for (let i = 0; i < 7; i++) { const bl = new THREE.Mesh(new THREE.BoxGeometry(12, .4, 3), new THREE.MeshStandardMaterial({color: '#3a3d3c'}));
+  bl.rotation.y = i / 7 * Math.PI * 2; bl.position.set(Math.cos(i / 7 * Math.PI * 2) * 6, 0, -Math.sin(i / 7 * Math.PI * 2) * 6); fan.add(bl); }
+{ const ring = new THREE.Mesh(new THREE.TorusGeometry(13, .8, 8, 40), new THREE.MeshStandardMaterial({color: '#7d8380'})); ring.rotation.x = Math.PI / 2; ring.position.copy(MV(-112, -18, 12.4)); mScene.add(ring); }
+mbox(22, 15, 1.4, 92, 28, 0, '#5b3a8c');                                                  // BME688 breakout
+const heater = mbox(3, 3, 1, 92, 26, 1.4, '#c9ccc8', {emissive: '#000000'});
+mbox(26, 36, 1.4, 96, -38, 0, '#2a5fa6'); mbox(25, 25, 4, 96, -40, 1.4, '#c8b88a', {roughness: .5});   // GPS + patch antenna
+const gpsLed = mbox(2, 2, 1, 105, -22, 1.4, '#e34948', {emissive: '#e34948', emissiveIntensity: 0});
+mbox(26, 34, 1.4, -92, 50, 0, '#2a5fa6'); mbox(15, 12, 2.6, -92, 58, 1.4, '#9aa09d', {metalness: .6});  // microSD module
+const sdLed = mbox(2, 2, 1, -82, 38, 1.4, '#f5c542', {emissive: '#f5c542', emissiveIntensity: 0});
+const batt = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 65, 32), new THREE.MeshStandardMaterial({color: '#3f7d4f', roughness: .45}));
+batt.rotation.z = Math.PI / 2; batt.position.copy(MV(-5, 105, 9)); batt.castShadow = true; mScene.add(batt);
+const battLevel = mbox(60, 3, .6, -5, 116, 0.2, '#1baf7a');
+mbox(22, 17, 1.4, 52, 100, 0, '#2a5fa6');                                                 // 5 V boost / charger
+
+// wires: sensor pins to the Nucleo headers, coloured by bus
+const WIRES = {
+  pms: {col: '#eda100', pts: [[-81, -14], [-60, -12], [-40, -6], [-33.5, -2]], label: 'USART1 PA10 RX · PA9 TX · 9600 baud'},
+  gps: {col: '#eb6834', pts: [[83, -30], [60, -24], [42, -14], [33.5, -10]], label: 'USART3 PC11 RX · PC10 TX · 9600 baud'},
+  i2c: {col: '#2a78d6', pts: [[81, 26], [60, 24], [42, 18], [33.5, 16]], label: 'I2C1 PB8 SCL · PB9 SDA · 400 kHz · 0x76'},
+  spi: {col: '#1baf7a', pts: [[-79, 40], [-60, 34], [-42, 26], [-33.5, 22]], label: 'SPI2 PB13–15 · CS PB12 · 10 MHz'},
+  pwr: {col: '#e34948', pts: [[28, 98], [20, 80], [6, 55], [0, 41]], label: '5 V boost (PMS, E5V) · 3.3 V'},
+};
+const wireCurves = {};
+for (const [k, w] of Object.entries(WIRES)) {
+  const pts = w.pts.map(([x, z], i) => MV(x, z, 6 + (i === 0 || i === w.pts.length - 1 ? 0 : 8)));
+  const curve = new THREE.CatmullRomCurve3(pts);
+  for (const off of [-1.2, 1.2]) {
+    const c2 = new THREE.CatmullRomCurve3(pts.map(p => p.clone().add(new THREE.Vector3(0, 0, off))));
+    const m = new THREE.Mesh(new THREE.TubeGeometry(c2, 48, .55, 6, false), new THREE.MeshStandardMaterial({color: w.col, roughness: .5}));
+    m.castShadow = true; mScene.add(m);
+  }
+  wireCurves[k] = curve;
+}
+// data packets travelling along the wires
+const PK = 60, pkMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1.9, 10, 8), new THREE.MeshBasicMaterial({color: '#ffffff'}), PK);
+const pkState = Array.from({length: PK}, () => ({wire: null, t: 2, dir: 1}));
+pkMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); mScene.add(pkMesh);
+let pkNext = 0;
+function sendPacket(wire, dir) { const p = pkState[pkNext]; pkNext = (pkNext + 1) % PK; p.wire = wire; p.t = 0; p.dir = dir; pkMesh.setColorAt(pkState.indexOf(p), new THREE.Color(WIRES[wire].col).offsetHSL(0, 0, .2)); }
+
+const mTags = [
+  ['STM32G474RE · Cortex-M4F', MV(0, 6, 26)], ['ST-LINK/V3E (debugger)', MV(-12, -33, 22)], ['PMS7003 particle sensor', MV(-105, -18, 34)],
+  ['BME688 gas / T / RH', MV(92, 28, 18)], ['GPS', MV(96, -38, 20)], ['microSD logger', MV(-92, 50, 18)],
+  ['Li-ion 2000 mAh', MV(-5, 105, 30)], ['5 V boost + charger', MV(52, 100, 16)]].map(([t, p]) => ({el: mkTag(t, 'mcu-tag'), pos: p}));
+const wireTags = Object.entries(WIRES).map(([k, w]) => ({el: mkTag(w.label, 'mcu-tag src-tag'), pos: wireCurves[k].getPoint(.5).clone().setY(20)}));
+
+// ---------------------------------------------------------------- data access
+const evByArch = {}, segByArch = {};
+for (const [a, v] of Object.entries(M32 ? M32.archs : {})) { evByArch[a] = v.events; segByArch[a] = v.segments; }
+const BUS_OF = {'PMS7003 UART+DMA': ['pms', 1], 'GPS UART+DMA': ['gps', 1], 'BME688 I2C': ['i2c', 1], 'SD SPI+DMA': ['spi', -1], 'SD busy-wait': ['spi', -1]};
+const CPU_LANES = ['PMS ISR + parse', 'GPS ISR + parse', 'I2C ISR', '1 Hz sample task', 'ADC', 'Window: features+MLP', 'FatFs CPU', 'SD busy-wait'];
+function stateAt(t) {
+  const sg = segByArch[mcuArch];
+  let lo = 0, hi = sg.length - 1;
+  while (lo < hi) { const m = (lo + hi + 1) >> 1; if (sg[m][0] <= t) lo = m; else hi = m - 1; }
+  return sg[lo] ? sg[lo][2] : 1;
+}
+const STATE_NAME = ['Run', 'Sleep', 'Stop 1'], STATE_COL = ['#eb6834', '#2a78d6', '#1baf7a'];
+const iOf = st => { const a = M32.archs[mcuArch]; return [a.i_run, a.i_sleep, a.i_stop][st]; };
+const internals = {};
+async function getInternals(caseIdx, k) {
+  const key = caseIdx + ':' + k;
+  if (internals[key]) return internals[key];
+  const b64 = D.cases[caseIdx].devices[k].internals;
+  const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const buf = await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+  const a = new Int16Array(buf);
+  return (internals[key] = a);
+}
+let mcuInt = null, mcuIntKey = '';
+function intRow(s) { if (!mcuInt) return null; const r = mcuInt.subarray(s * 30, s * 30 + 30); return Array.from(r, v => v / 1000); }
+
+// ---------------------------------------------------------------- panel
+function mcuEnter() {
+  layoutDev();
+  const caseIdx = D.cases.indexOf(C), key = caseIdx + ':' + devSel;
+  if (key !== mcuIntKey) { mcuIntKey = key; mcuInt = null; getInternals(caseIdx, devSel).then(a => { if (mcuIntKey === key) mcuInt = a; mcuLastPanel = 0; }); }
+  $('mcuDev').innerHTML = devs.map((v, k) => `<option value="${k}" ${k === devSel ? 'selected' : ''}>${v.d.id}</option>`).join('');
+  mcuLastPanel = 0;
+}
+const fmt = (x, d = 0) => Number.isFinite(x) ? x.toLocaleString(undefined, {maximumFractionDigits: d, minimumFractionDigits: d}) : '–';
+const tag = k => `<span class="t-${k}" title="${{SIM: 'Produced by the firmware twin running on simulated sensor signals', MODEL: 'Exact operation counts x Cortex-M4F cycle costs', EST: 'Estimate from datasheet-typical values; range shown; not yet measured'}[k]}">${k}</span>`;
+function bars(vals, names, colors, max = 1, fmtv = v => fmt(v, 2)) {
+  return vals.map((v, i) => `<div class="mb"><span class="mbn">${names[i]}</span><span class="mbt"><i style="width:${Math.max(0, Math.min(100, 100 * v / max))}%;background:${colors[i] || '#2a78d6'}"></i></span><span class="mbv">${fmtv(v)}</span></div>`).join('');
+}
+function mcuPanel(s) {
+  const dv = C.devices[devSel], A = M32.archs[mcuArch], f = intRow(s);
+  const st = stateAt(mcuT), i_now = iOf(st);
+  const cyc = M32.cycles[mcuArch === 'A0' ? 'v0' : 'v3'];
+  const win = w => cyc[w].wcheck + cyc[w].features + cyc[w].mlp + cyc[w].post;
+  const us = win('nom') / M32.spec.f_mhz, uj = us * 1e-6 * A.i_run * 1e-3 * 3.3 * 1e6;
+  const sec = Math.floor(mcuT), irq = A.events.filter(e => CPU_LANES.includes(e[0]) && e[1] >= sec && e[1] < sec + 1).length;
+  const p = CLS[dv.pred[s]], l10 = CLS[dv.label10 ? dv.label10[s] : dv.pred[s]];
+  const sysA0 = M32.levers[0][1], sysMa = mcuArch === 'A0' ? sysA0 : sysA0 - M32.archs.A0.avg_ma[1] + M32.archs.A4.avg_ma[1];
+  const usable = 2000 * 0.85, used = sysMa * tSim / 3600, left = Math.max(0, 1 - used / usable);
+  let sensors = '<p class="src">Decoding this device…</p>', model = '';
+  const code = dv.pred[s];
+  if (code === 7) sensors = '<p class="src">Warming up: the PMS7003 fan and the BME688 heater need the first 5 minutes after power-on before readings are used.</p>';
+  else if (code === 6) sensors = '<p class="src" style="color:var(--bad)">Sensor fault: this window had too few valid particle frames or gas readings, so the device reports a fault instead of guessing.</p>';
+  if (f && code !== 6 && code !== 7) {
+    const pm25 = dv.pm[s], pm1 = f[8] * (pm25 + 1) - 1, pm10 = (pm25 + 1) / Math.max(f[7], 1e-3) - 1;
+    const frac = f.slice(0, 6).map(v => Math.pow(10, v));
+    const rg = f.slice(13, 19).map(v => v + f[12]);
+    const heatStep = M32.heater[Math.floor(mcuT) % 10];
+    sensors = `<div class="mg"><div><b>${fmt(pm1)}</b><span>PM1</span></div><div><b>${fmt(pm25)}</b><span>PM2.5</span></div><div><b>${fmt(pm10)}</b><span>PM10</span></div></div>
+      <div class="lbl">PMS7003 size fractions (share of counted particles) ${tag('SIM')}</div>
+      ${bars(frac, ['0.3-0.5', '0.5-1', '1-2.5', '2.5-5', '5-10', '>10 µm'], [], 1, v => (100 * v).toFixed(v < .01 ? 2 : 0) + '%')}
+      <div class="mg"><div><b>${fmt(f[24] * 50, 1)} °C</b><span>T (reads high: self-heating)</span></div><div><b>${fmt(f[23] * 100)} %</b><span>RH</span></div><div><b>${heatStep} °C</b><span>heater step now</span></div></div>
+      <div class="lbl">BME688 gas response ln(R / clean-air R) per heater temperature ${tag('SIM')}</div>
+      ${bars(rg.map(v => -v), M32.groups.map(g => g + ' °C'), rg.map(v => v < 0 ? '#eb6834' : '#2a78d6'), 2, v => fmt(-v, 2))}`;
+    const probs = f.slice(25, 30);
+    model = `<div class="lbl">25 features computed on the MCU ${tag('SIM')}</div>
+      <div class="feat">${M32.features.map((n, i) => `<span title="${n}">${n.replace('lfrac_', 'f ').replace('gas_shape_', 'g ')}<b>${fmt(f[i], 2)}</b></span>`).join('')}</div>
+      <div class="lbl">int8 MLP output (after smoothing) · gate ${Math.round(D.conf_thr * 100)}% ${tag('SIM')}</div>
+      ${bars(probs, CLS.slice(0, 5).map(c => NICE[c]), CLS.slice(0, 5).map(c => COLOR[c]), 1, v => Math.round(100 * v) + '%')}`;
+  }
+  $('mcuPanel').innerHTML = `
+    <div class="mh"><b>MCU now</b><span class="src">${mcuArch === 'A0' ? 'starter firmware (HAL, 1 ms tick)' : 'optimised firmware (tickless, DMA)'}</span></div>
+    <div class="mg"><div><b>${M32.spec.f_mhz} MHz</b><span>core clock</span></div>
+      <div><b style="color:${STATE_COL[st]}">${STATE_NAME[st]}</b><span>power state ${tag('EST')}</span></div>
+      <div><b>${fmt(i_now, i_now < 1 ? 2 : 1)} mA</b><span>current now ${tag('EST')}</span></div>
+      <div><b>${fmt(A.avg_ma[1], 2)} mA</b><span>average (${fmt(A.avg_ma[0], 1)}–${fmt(A.avg_ma[2], 1)}) ${tag('EST')}</span></div>
+      <div><b>${(100 * A.run).toFixed(3)}%</b><span>time the core runs</span></div>
+      <div><b>${(100 * A.stop).toFixed(0)}%</b><span>time in Stop 1</span></div></div>
+    <canvas id="mcuCur" height="70"></canvas><canvas id="mcuLA" height="92"></canvas>
+    <p class="src">Interrupts this second: ${irq}${A.tick === 'hal1k' ? ' + 1,000 SysTick' : ''}. Board activity replays the firmware's 30 s cycle at ${mcuRate === 1 ? 'real time' : '1/' + Math.round(1 / mcuRate) + ' speed'}; events shorter than a few ms are stretched so you can see them.</p>
+    <div class="mh"><b>Sensors</b><span class="src">${devs[devSel].d.id} · ${hhmm(tSim)} · window values</span></div>${sensors}
+    <div class="mh"><b>Inference (every 30 s)</b><span class="src">${fmt(win('nom') / 1000, 0)} k cycles ${tag('MODEL')} · ${fmt(us, 0)} µs · ${fmt(uj, 1)} µJ</span></div>${model}
+    <div class="mg"><div><b style="color:${COLOR[p] || '#55544f'}">${NICE[p]}</b><span>source now</span></div>
+      <div><b style="color:${COLOR[l10] || '#55544f'}">${NICE[l10]}</b><span>10-min source</span></div>
+      <div><b>${dv.pm5 && dv.pm5[s] >= 0 ? fmt(dv.pm5[s]) : '–'}</b><span>PM2.5, 5-min corrected (${dv.pm5_lo && dv.pm5_lo[s] >= 0 ? dv.pm5_lo[s] + '–' + dv.pm5_hi[s] : '–'})</span></div></div>
+    <div class="mh"><b>Memory ${tag('EST')}</b></div>
+    ${bars([M32.memory.flash_total[1] / 1024, M32.memory.ram_total[1] / 1024], ['Flash', 'SRAM'], ['#4a3aa7', '#2a78d6'], 1, v => fmt(v, 0) + ' KB')}
+    <p class="src">of ${M32.memory.flash_cap / 1024} KB flash and ${M32.memory.ram_cap / 1024} KB SRAM (firmware state ${fmt(M32.state_bytes / 1024, 1)} KB, model 1.8 KB)</p>
+    <div class="mh"><b>Battery ${tag('EST')}</b></div>
+    <div class="mg"><div><b>${Math.round(100 * left)}%</b><span>left after ${fmt(tSim / 3600, 1)} h</span></div><div><b>${fmt(sysMa)} mA</b><span>whole device (Nucleo, PMS on, GPS on)</span></div>
+      <div><b>${fmt(usable / sysMa, 1)} h</b><span>on one charge</span></div></div>
+    <p class="foot"><b>SIM</b> produced by the firmware twin on simulated sensor signals · <b>MODEL</b> exact operation counts × Cortex-M4F costs · <b>EST</b> datasheet-typical estimate with a range, not yet measured on a board.</p>`;
+  // memory bars relative to capacity
+  const mb = $('mcuPanel').querySelectorAll('.mb .mbt i');
+  if (mb.length >= 2) { const n = mb.length; mb[n - 2].style.width = (100 * M32.memory.flash_total[1] / M32.memory.flash_cap) + '%'; mb[n - 1].style.width = (100 * M32.memory.ram_total[1] / M32.memory.ram_cap) + '%'; }
+}
+function drawMcuCanvases() {
+  const cur = $('mcuCur'), la = $('mcuLA');
+  if (!cur || !la) return;
+  const sz = cv => { const h0 = Number(cv.dataset.h || cv.getAttribute('height')); cv.dataset.h = h0; cv.style.height = h0 + 'px';
+    const r = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio, 2); cv.width = Math.max(1, r.width * dpr); cv.height = h0 * dpr;
+    const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); return [g, r.width, h0]; };
+  let [g, w, h] = sz(cur);
+  const span = 2.0, n = 300, maxI = M32.archs[mcuArch].i_run;
+  g.fillStyle = '#eef0ec'; g.fillRect(0, 0, w, h);
+  g.beginPath();
+  for (let k = 0; k <= n; k++) { let t = mcuT - span + span * k / n; t = ((t % 30) + 30) % 30; const i = iOf(stateAt(t)); const x = w * k / n, y = h - 4 - (h - 14) * i / maxI; k ? g.lineTo(x, y) : g.moveTo(x, y); }
+  g.strokeStyle = '#2a78d6'; g.lineWidth = 1.4; g.stroke();
+  g.fillStyle = '#56605b'; g.font = '10px IBM Plex Mono, monospace'; g.fillText(`current, last ${span} s of MCU time (${fmt(maxI, 0)} mA top)`, 6, 11);
+  [g, w, h] = sz(la);
+  const lanes = [['PMS UART', 'pms'], ['GPS UART', 'gps'], ['I2C', 'i2c'], ['SPI / SD', 'spi'], ['CPU', 'cpu']];
+  const sec = Math.floor(mcuT), lh = (h - 14) / lanes.length;
+  g.fillStyle = '#eef0ec'; g.fillRect(0, 0, w, h);
+  g.font = '9.5px IBM Plex Mono, monospace';
+  lanes.forEach(([name, key], li) => {
+    const y = 12 + li * lh;
+    g.fillStyle = '#8b948f'; g.fillText(name, 4, y + lh * .65);
+    for (const [lane, a, b] of M32.archs[mcuArch].events) {
+      const isCpu = CPU_LANES.includes(lane), bus = BUS_OF[lane];
+      if (key === 'cpu' ? !isCpu : !(bus && bus[0] === key)) continue;
+      if (b < sec || a >= sec + 1) continue;
+      const x0 = 62 + (w - 66) * (Math.max(a, sec) - sec), x1 = 62 + (w - 66) * (Math.min(b, sec + 1) - sec);
+      g.fillStyle = key === 'cpu' ? '#eb6834' : WIRES[key].col; g.fillRect(x0, y + 2, Math.max(2, x1 - x0), lh - 5);
+    }
+  });
+  const xc = 62 + (w - 66) * (mcuT - sec);
+  g.fillStyle = '#1d2321'; g.fillRect(xc - 1, 10, 2, h - 10);
+  g.fillStyle = '#56605b'; g.fillText(`bus activity in second ${sec} of the 30 s cycle`, 6, 9);
+}
+
+// ---------------------------------------------------------------- per-frame update
+let mcuPrevT = 0;
+function mcuFrame(dt, now, s) {
+  if (!M32) { renderer.render(mScene, mCam); return; }
+  const prev = mcuT;
+  mcuT = ((mcuT + dt * mcuRate) % 30 + 30) % 30;
+  const wrapped = mcuT < prev;
+  // events that started since the last frame become packets
+  for (const [lane, a] of M32.archs[mcuArch].events) {
+    const bus = BUS_OF[lane];
+    if (!bus) continue;
+    const started = wrapped ? (a >= prev || a < mcuT) : (a >= prev && a < mcuT);
+    if (started) sendPacket(bus[0], bus[1]);
+  }
+  if (Math.floor(prev) !== Math.floor(mcuT)) sendPacket('pwr', 1);
+  // packets advance in wall time so they stay visible
+  for (let i = 0; i < PK; i++) {
+    const p = pkState[i];
+    if (!p.wire || p.t > 1) { tmp.position.set(0, -50, 0); tmp.scale.setScalar(.001); }
+    else { p.t += dt / 0.55; const u = p.dir > 0 ? p.t : 1 - p.t; tmp.position.copy(wireCurves[p.wire].getPoint(Math.min(1, Math.max(0, u)))); tmp.scale.setScalar(1); }
+    tmp.updateMatrix(); pkMesh.setMatrixAt(i, tmp.matrix);
+  }
+  pkMesh.instanceMatrix.needsUpdate = true; if (pkMesh.instanceColor) pkMesh.instanceColor.needsUpdate = true;
+  // chip, LEDs, fan, heater
+  const st = stateAt(mcuT);
+  const sysTickFlicker = M32.archs[mcuArch].tick === 'hal1k' && st === 1 && Math.sin(now / 9) > .6;
+  mcuChip.material.emissive.set(sysTickFlicker ? STATE_COL[0] : STATE_COL[st]);
+  mcuChip.material.emissiveIntensity = st === 0 || sysTickFlicker ? .9 : st === 1 ? .35 : .04;
+  const sinceWin = ((mcuT - 29.95) % 30 + 30) % 30;
+  ld2.material.emissiveIntensity = sinceWin < 0.5 * mcuRate ? 1.2 : 0;
+  sdLed.material.emissiveIntensity = M32.archs[mcuArch].events.some(e => (e[0] === 'SD SPI+DMA' || e[0] === 'SD busy-wait' || e[0] === 'FatFs CPU') && mcuT >= e[1] && mcuT < e[1] + 0.4 * mcuRate) ? 1.2 : 0;
+  gpsLed.material.emissiveIntensity = (mcuT % 1) < 0.12 ? 1 : 0;
+  fan.rotation.y += dt * 40;
+  const hs = M32.heater[Math.floor(mcuT) % 10], hc = new THREE.Color().setHSL(0.13 - 0.13 * (hs - 150) / 250, 1, .5);
+  heater.material.emissive.copy(hc); heater.material.emissiveIntensity = .9;
+  // battery level
+  const sysA0 = M32.levers[0][1], sysMa = mcuArch === 'A0' ? sysA0 : sysA0 - M32.archs.A0.avg_ma[1] + M32.archs.A4.avg_ma[1];
+  const left = Math.max(0, 1 - sysMa * tSim / 3600 / 1700);
+  battLevel.scale.x = Math.max(.02, left); battLevel.position.x = -5 - 30 * (1 - left);
+  battLevel.material.color.setHSL(0.33 * left, .7, .45);
+  mCtl.update();
+  renderer.render(mScene, mCam);
+  const place2 = (el, pos) => { proj.copy(pos).project(mCam); if (proj.z > 1) { el.style.display = 'none'; return; }
+    el.style.display = ''; el.style.left = ((proj.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - proj.y) / 2 * innerHeight) + 'px'; };
+  mTags.forEach(t => place2(t.el, t.pos)); wireTags.forEach(t => place2(t.el, t.pos));
+  if (now - mcuLastPanel > 250) { mcuLastPanel = now; mcuPanel(s); }
+  drawMcuCanvases();
+}
+$('mcuArchSel').onchange = e => { mcuArch = e.target.value; mcuLastPanel = 0; };
+$('mcuRateSel').onchange = e => { mcuRate = Number(e.target.value); mcuLastPanel = 0; };
+$('mcuDev').onchange = e => { devSel = Number(e.target.value); mcuEnter(); };
 
 // ---------------------------------------------------------------- picking
 const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
@@ -646,22 +1170,92 @@ function pick(ev) {
 let downAt = null;
 renderer.domElement.addEventListener('pointerdown', e => downAt = [e.clientX, e.clientY]);
 renderer.domElement.addEventListener('pointerup', e => {
+  if (viewMode !== 'map') return;
   if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 5) return;
   const k = pick(e); selected = k; $('panel').hidden = k === null; lastPanel = -1;
 });
 renderer.domElement.addEventListener('pointermove', e => {
+  if (viewMode !== 'map') return;
   const k = pick(e), tip = $('tip');
   renderer.domElement.style.cursor = k === null ? '' : 'pointer';
   if (k === null) { tip.hidden = true; return; }
   const s = stepAt(tSim), dv = C.devices[k];
-  tip.innerHTML = `<b>${devs[k].d.id}</b> reports <b>${NICE[CLS[dv.pred[s]]]}</b> (${dv.conf[s]}%)<br>Really: ${NICE[CLS[dv.truth[s]]]} · PM2.5 ${dv.pm_true[s]} µg/m³<br><span class="src">Click for details</span>`;
+  tip.innerHTML = `<b>${devs[k].d.id}</b> reports <b>${NICE[CLS[shownLabel(dv, s)]]}</b> (${dv.conf[s]}%)<br>Really: ${NICE[CLS[shownTruth(dv, s)]]}<br>PM2.5 ${pmText(dv, s)} · true ${dv.pm_true[s]} µg/m³<br><span class="src">Click for details</span>`;
   tip.style.left = Math.min(e.clientX + 14, innerWidth - 250) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; tip.hidden = false;
 });
+
+// ---------------------------------------------------------------- Build tab: how to construct the real device
+// Content comes from build_spec.py (results/build_params.json), which reads params.py, spec.py and the firmware headers,
+// so every number here is the one the simulation used. Memory and power-lever rows come live from the STM32 run (D.stm32).
+let buildDone = false;
+const escH = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+function copyText(txt, btn) {
+  const done = ok => { if (btn) { const o = btn.textContent; btn.textContent = ok ? 'Copied' : 'Copy failed'; setTimeout(() => btn.textContent = o, 1400); } };
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove(); done(ok); };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(txt).then(() => done(true), fallback); else fallback();
+}
+function buildSections() {
+  const B = D.build, S = B.sections.map(s => ({...s}));
+  if (M32) {
+    const kb = b => (b / 1024).toFixed(1) + ' KB';
+    const mem = [...M32.memory.flash.map(([n, b]) => ['Flash · ' + n, kb(b), '', 'EST']), ...M32.memory.ram.map(([n, b]) => ['SRAM · ' + n, kb(b), '', 'EST']),
+      ['Flash total', kb(M32.memory.flash_total[1]), `of ${M32.memory.flash_cap / 1024} KB (range ${kb(M32.memory.flash_total[0])}–${kb(M32.memory.flash_total[2])})`, 'EST'],
+      ['SRAM total', kb(M32.memory.ram_total[1]), `of ${M32.memory.ram_cap / 1024} KB (range ${kb(M32.memory.ram_total[0])}–${kb(M32.memory.ram_total[2])})`, 'EST']];
+    const lev = M32.levers.map(([n, ma, h]) => [n, ma.toFixed(1) + ' mA', `battery life ≈ ${h >= 48 ? (h / 24).toFixed(1) + ' days' : h.toFixed(0) + ' h'} (whole system)`, 'EST']);
+    const i = S.findIndex(s => s.id === 'power') + 1;
+    S.splice(i, 0, {id: 'mem', title: '8b · Memory map and battery life', intro: 'From the STM32 run (python run_mcu.py). Each design lever is applied on top of the previous one; the last row is the full optimised design.',
+      cols: ['Item', 'Value', 'Notes', 'Tag'], rows: [...mem, ...lev], steps: []});
+  }
+  return S;
+}
+function sectionText(s) {
+  let o = `## ${s.title}\n\n${s.intro}\n\n`;
+  if (s.rows.length) o += '| ' + s.cols.join(' | ') + ' |\n|' + s.cols.map(() => '---|').join('') + '\n' + s.rows.map(r => '| ' + r.join(' | ') + ' |').join('\n') + '\n\n';
+  s.steps.forEach((x, k) => o += `${k + 1}. ${x}\n`);
+  return o;
+}
+function buildEnter() {
+  if (buildDone) return;
+  const doc = $('buildDoc');
+  if (!D.build) { doc.innerHTML = '<p>The build sheet is missing. Run <code>python viewer/build_viewer.py</code> to regenerate it.</p>'; return; }
+  buildDone = true;
+  const B = D.build, S = buildSections();
+  const tag = x => `<span class="t-${x}" title="${escH(B.tags[x] || '')}">${x}</span>`;
+  $('buildNav').innerHTML = S.map(s => `<a href="#b-${s.id}" data-s="${s.id}">${escH(s.title)}</a>`).join('');
+  doc.innerHTML = `<p><b>Everything needed to build the real PolSo device from this repo.</b> Generated by <code>build_spec.py</code> from the files the simulation ran on, and also saved as <code>BUILD_GUIDE.md</code> at the repo root.
+    Tags: ${Object.keys(B.tags).map(k => tag(k) + ' ' + escH(B.tags[k])).join(' · ')}.</p>
+    <div class="copyrow"><button class="btn" id="bCopyAll">Copy whole guide (Markdown)</button></div>` +
+    S.map(s => `<section><h2 id="b-${s.id}">${escH(s.title)}</h2><p>${escH(s.intro)}</p>
+      ${s.rows.length ? `<div class="scroll"><table><thead><tr>${s.cols.map(c => `<th>${escH(c)}</th>`).join('')}</tr></thead><tbody>${s.rows.map(r =>
+        `<tr>${r.map((c, k) => k === r.length - 1 && s.cols[k] === 'Tag' ? `<td>${tag(c)}</td>` : `<td>${escH(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
+      ${s.steps.length ? `<ol>${s.steps.map(x => `<li>${escH(x)}</li>`).join('')}</ol>` : ''}
+      <div class="copyrow"><button class="btn" data-copy="${s.id}">Copy this section</button></div></section>`).join('');
+  $('bCopyAll').onclick = e => copyText('# PolSo build guide\n\n' + S.map(sectionText).join('\n'), e.currentTarget);
+  doc.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copyText(sectionText(S.find(s => s.id === b.dataset.copy)), b));
+  $('buildNav').onclick = e => {
+    const a = e.target.closest('a'); if (!a) return; e.preventDefault();
+    const h = $('b-' + a.dataset.s); doc.scrollTo({top: h.offsetTop - doc.offsetTop - 8, behavior: reduceMotion ? 'auto' : 'smooth'});
+  };
+}
 
 // ---------------------------------------------------------------- loop
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
   renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  mCam.aspect = w / h;
+  // narrow screens: the STM32 panel is a bottom sheet, so centre the board and lift it into the free top part
+  const narrow = innerWidth <= 900, mcuFit = narrow ? 'n' : 'w';
+  if (mcuFit !== resize.mcuFit) {
+    resize.mcuFit = mcuFit;
+    if (narrow) { mCtl.target.set(0, 0, 18); mCam.position.set(0, innerWidth < 560 ? 420 : 300, innerWidth < 560 ? 470 : 330); } else { mCtl.target.set(42, 0, 18); mCam.position.set(10, 235, 260); }
+  }
+  if (narrow) {                             // centre the board in the space between the case bar and the bottom sheet
+    const m = document.querySelector('.main').getBoundingClientRect(), sheet = innerWidth <= 560 ? 0.66 : 0.58;
+    const freeMid = (m.top + m.bottom - sheet * m.height) / 2;
+    mCam.setViewOffset(w, h, 0, h / 2 - freeMid, w, h);
+  } else mCam.clearViewOffset();
+  mCam.updateProjectionMatrix();
   if (C) { drawStrip(); layoutDev(); devDrawnFor = ''; lastStep = -1; }
 }
 addEventListener('resize', resize);
@@ -673,7 +1267,7 @@ function place(el, pos) {
   el.style.display = ''; el.style.left = ((proj.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - proj.y) / 2 * innerHeight) + 'px';
 }
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
   if (playing) { tSim += dt * Number($('speed').value); if (tSim >= caseDur()) tSim = 0; }
   const s = stepAt(tSim), w = weatherAt(tSim);
   $('scrub').value = Math.round(tSim / caseDur() * 1000);
@@ -686,11 +1280,20 @@ function frame(now) {
     if (s !== lastStep) { lastStep = s; stats(s); renderDev(s); }
     requestAnimationFrame(frame); return;
   }
+  if (buildMode) {                          // build guide is static text: no 3D work
+    if (s !== lastStep) { lastStep = s; stats(s); }
+    requestAnimationFrame(frame); return;
+  }
+  if (mcuMode) {
+    if (s !== lastStep) { lastStep = s; stats(s); }
+    mcuFrame(dt, now, s);
+    requestAnimationFrame(frame); return;
+  }
   if (s !== lastStep) {
     lastStep = s; stats(s);
     let pmSum = 0;
     devs.forEach((v, k) => {
-      const dv = C.devices[k], p = CLS[dv.pred[s]], t = CLS[dv.truth[s]], o = outcome(dv, s);
+      const dv = C.devices[k], p = CLS[shownLabel(dv, s)], t = CLS[shownTruth(dv, s)], o = outcome(dv, s);
       v.beaconMat.color.set(COLOR[p]); v.beaconMat.emissive.set(COLOR[p]);
       v.ringMat.color.set(COLOR[t]);
       v.tag.innerHTML = `${v.d.id} ${o === 'good' ? '<span class="ok">✓</span>' : o === 'bad' ? '<span class="no">✗</span>' : o === 'unc' ? '?' : o === 'off' ? '⚠' : ''}`;
@@ -747,7 +1350,9 @@ let startIdx = 0;
 try { const k = D.cases.findIndex(c => c.id === localStorage.getItem('polso-case')); if (k >= 0) startIdx = k; } catch (e) {}
 buildDevTabs();
 resize(); loadCase(startIdx);
-try { if (localStorage.getItem('polso-view') === 'dev') setView(true); } catch (e) {}
+try { const v0 = localStorage.getItem('polso-view'); if (v0 === 'dev' || v0 === 'mcu' || v0 === 'build') setView(v0); else setView('map'); } catch (e) {}
 $('play').textContent = playing ? 'Pause' : 'Play';
 requestAnimationFrame(frame);
+// test hook: drive one frame by hand (used for automated checks when the page is not being painted)
+window.polsoDebug = {frame: t => frame(t ?? performance.now())};
 </script>

@@ -1,0 +1,9 @@
+BENCH logf 405 450 540
+BENCH log10f 175 195 234
+BENCH expf 134 149 179
+BENCH sqrtf 14 16 19
+BENCH floorf 25 28 34
+BENCH pms_frame_parse 652 724 869
+BENCH fw_tick_sample 565 628 753
+BENCH mlp_forward 8190 9100 10920
+BENCH fw_tick_window 47733 53037 63645

@@ -1,0 +1,220 @@
+{
+ "variants": {
+  "v0": {
+   "label": "Reference firmware",
+   "cycles": {
+    "low": {
+     "sample": 363.2373055555555,
+     "wcheck": 38.45378151260505,
+     "features": 23948.609545454543,
+     "mlp": 5190.5713636363635,
+     "post": 101.46818181818182,
+     "uart_frame": 400.0
+    },
+    "nom": {
+     "sample": 546.2606916666666,
+     "wcheck": 50.082352941176474,
+     "features": 37444.296272727275,
+     "mlp": 7913.3450454545455,
+     "post": 165.795,
+     "uart_frame": 630.0
+    },
+    "high": {
+     "sample": 1049.9397569444445,
+     "wcheck": 78.57142857142858,
+     "features": 71165.31534090909,
+     "mlp": 14068.818181818184,
+     "post": 360.02840909090907,
+     "uart_frame": 1250.0
+    }
+   },
+   "hop_cycles": {
+    "low": 52176.22203908836,
+    "nom": 80861.33942112299,
+    "high": 154670.92606872294
+   },
+   "equivalence": {
+    "agree": 1.0,
+    "windows": 357,
+    "hard_disagree": 0,
+    "gate_flips": 0,
+    "max_dprob": 0.0,
+    "max_rel_dfeat": 0.0
+   },
+   "state_bytes": 3204
+  },
+  "v1": {
+   "label": "+ log10 cached per second",
+   "cycles": {
+    "low": {
+     "sample": 474.93730555555555,
+     "wcheck": 38.45378151260505,
+     "features": 8980.809545454546,
+     "mlp": 5190.5713636363635,
+     "post": 101.46818181818182,
+     "uart_frame": 400.0
+    },
+    "nom": {
+     "sample": 727.0706916666667,
+     "wcheck": 50.082352941176474,
+     "features": 13215.756272727273,
+     "mlp": 7913.3450454545455,
+     "post": 165.795,
+     "uart_frame": 630.0
+    },
+    "high": {
+     "sample": 1404.3147569444443,
+     "wcheck": 78.57142857142858,
+     "features": 23679.065340909092,
+     "mlp": 14068.818181818184,
+     "post": 360.02840909090907,
+     "uart_frame": 1250.0
+    }
+   },
+   "hop_cycles": {
+    "low": 40559.42203908837,
+    "nom": 62057.099421123,
+    "high": 117815.92606872297
+   },
+   "equivalence": {
+    "agree": 1.0,
+    "windows": 357,
+    "hard_disagree": 0,
+    "gate_flips": 0,
+    "max_dprob": 0.0,
+    "max_rel_dfeat": 0.0
+   },
+   "state_bytes": 3444
+  },
+  "v2": {
+   "label": "+ humidity term every 10 s",
+   "cycles": {
+    "low": {
+     "sample": 351.7410277777778,
+     "wcheck": 38.45378151260505,
+     "features": 8980.809545454546,
+     "mlp": 5190.509545454545,
+     "post": 101.46818181818182,
+     "uart_frame": 400.0
+    },
+    "nom": {
+     "sample": 557.1323916666666,
+     "wcheck": 50.082352941176474,
+     "features": 13215.756272727273,
+     "mlp": 7913.261045454546,
+     "post": 165.795,
+     "uart_frame": 630.0
+    },
+    "high": {
+     "sample": 1086.9321180555557,
+     "wcheck": 78.57142857142858,
+     "features": 23679.065340909092,
+     "mlp": 14068.659090909092,
+     "post": 360.02840909090907,
+     "uart_frame": 1250.0
+    }
+   },
+   "hop_cycles": {
+    "low": 36863.471887573214,
+    "nom": 56958.86642112299,
+    "high": 108294.2878111472
+   },
+   "equivalence": {
+    "agree": 0.9971988795518207,
+    "windows": 357,
+    "hard_disagree": 0,
+    "gate_flips": 1,
+    "max_dprob": 0.4187098,
+    "max_rel_dfeat": 12.722883308318652
+   },
+   "state_bytes": 3456
+  },
+  "v3": {
+   "label": "+ polynomial log / exp",
+   "cycles": {
+    "low": {
+     "sample": 193.07102777777777,
+     "wcheck": 38.45378151260505,
+     "features": 8325.609545454545,
+     "mlp": 4947.009545454545,
+     "post": 101.46818181818182,
+     "uart_frame": 400.0
+    },
+    "nom": {
+     "sample": 292.61639166666663,
+     "wcheck": 50.082352941176474,
+     "features": 12103.596272727273,
+     "mlp": 7539.4610454545455,
+     "post": 165.795,
+     "uart_frame": 630.0
+    },
+    "high": {
+     "sample": 555.7446180555555,
+     "wcheck": 78.57142857142858,
+     "features": 21469.065340909092,
+     "mlp": 13259.284090909092,
+     "post": 360.02840909090907,
+     "uart_frame": 1250.0
+    }
+   },
+   "hop_cycles": {
+    "low": 31204.671887573208,
+    "nom": 47537.426421123,
+    "high": 89339.28781114718
+   },
+   "equivalence": {
+    "agree": 0.9971988795518207,
+    "windows": 357,
+    "hard_disagree": 0,
+    "gate_flips": 1,
+    "max_dprob": 0.4187098,
+    "max_rel_dfeat": 12.719160095938532
+   },
+   "state_bytes": 3456
+  },
+  "v4": {
+   "label": "+ SIMD int8 MLP (estimated)",
+   "cycles": {
+    "low": {
+     "sample": 193.07102777777777,
+     "wcheck": 38.45378151260505,
+     "features": 8325.609545454545,
+     "mlp": 2719.8095454545455,
+     "post": 101.46818181818182,
+     "uart_frame": 400.0
+    },
+    "nom": {
+     "sample": 292.61639166666663,
+     "wcheck": 50.082352941176474,
+     "features": 12103.596272727273,
+     "mlp": 4323.941045454546,
+     "post": 165.795,
+     "uart_frame": 630.0
+    },
+    "high": {
+     "sample": 555.7446180555555,
+     "wcheck": 78.57142857142858,
+     "features": 21469.065340909092,
+     "mlp": 8039.284090909091,
+     "post": 360.02840909090907,
+     "uart_frame": 1250.0
+    }
+   },
+   "hop_cycles": {
+    "low": 28977.47188757321,
+    "nom": 44321.90642112299,
+    "high": 84119.28781114718
+   },
+   "equivalence": {
+    "agree": 0.9971988795518207,
+    "windows": 357,
+    "hard_disagree": 0,
+    "gate_flips": 1,
+    "max_dprob": 0.4187098,
+    "max_rel_dfeat": 12.719160095938532,
+    "note": "integer dot products are bit-identical to scalar C"
+   },
+   "state_bytes": 3456
+  }
+ }
+}

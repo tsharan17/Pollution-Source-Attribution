@@ -1,0 +1,12 @@
+  rehearsal: 36 unit-days (12 days x 3 units x 8 h), 34524 windows
+  verification rehearsal: 3/9 criteria met; F1 vs observer 0.52, vs truth 0.60
+done in 1.0 min -> results/verification_results.pkl
+  [FAIL] PM2.5 slope vs FEM (EPA 1.0 +/- 0.35), RH-corrected, held-out days: 0.60
+  [FAIL] PM2.5 intercept (EPA -5 to +5 ug/m3): 15.1
+  [FAIL] PM2.5 linearity R2 >= 0.70 (EPA): 0.68
+  [FAIL] PM2.5 error RMSE <= 7 ug/m3 or NRMSE <= 30 % (EPA): 31.9 / 44%
+  [PASS] PM2.5 unit-to-unit precision SD <= 5 or CV <= 30 % (EPA): SD 7.9, CV 19%
+  [FAIL] Source macro-F1 vs observer log >= 0.75: 0.52 [0.40-0.54]
+  [FAIL] Selective accuracy >= 0.90 at coverage >= 0.70: 81% @ 99%
+  [PASS] Calibration error ECE <= 0.10: 0.009
+  [PASS] Co-located units agree on >= 85 % of windows: 100%
